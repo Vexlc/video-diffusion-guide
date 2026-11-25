@@ -1,0 +1,91 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>跟读 HunyuanVideo · 实验 O</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f1f4ef;color:#193540;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:980px;margin:auto;padding:clamp(16px,4vw,42px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.32}h1{font-size:clamp(32px,6vw,52px);margin:6px 0 10px}h2{font-size:clamp(22px,4vw,30px);margin:0 0 8px}p{margin:7px 0 13px}section{background:#fff;border:1px solid #cbd8d0;border-radius:7px;padding:clamp(14px,3vw,26px);margin:18px 0}a,.k{color:#00695f}a{text-underline-offset:3px}.controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:12px 0}label{font-weight:650}button,select,input{font:inherit;color:inherit}select,button,input[type=number]{border:1px solid #9dafa2;border-radius:4px;background:white;padding:4px 7px}input[type=number]{width:5.5em}input[type=range]{vertical-align:middle;max-width:100%;accent-color:#00695f}button{cursor:pointer}.path{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.path div,.eq{background:#edf4ef;border-left:3px solid #00695f;padding:8px 12px}.path strong,.path small{display:block}.path small,.note{font-size:14px;color:#4b6065}.grid{display:grid;gap:5px}.grid button{font-variant-numeric:tabular-nums}.grid [aria-pressed=true]{background:#00695f;color:white}.eq{margin:10px 0;font-variant-numeric:tabular-nums}.plot svg{display:block;width:100%;background:#fbfcf8}.axes,.legend{font-size:14px;color:#495f66}.legend span{margin-right:15px}.teal{color:#00695f}.rust{color:#a44326}.error{color:#9f3019;font-weight:650}table{border-collapse:collapse;width:100%;text-align:left;font-variant-numeric:tabular-nums}td,th{padding:6px;border-bottom:1px solid #d4dfd7}th{color:#00695f}.current{background:#e4f1e8;font-weight:700}summary{cursor:pointer;font-weight:650;color:#00695f}code{overflow-wrap:anywhere}output{font-variant-numeric:tabular-nums}
+@media(max-width:580px){.path{grid-template-columns:1fr}.controls{gap:8px 12px}.grid button{font-size:14px;padding:6px 0}.plot svg{min-width:460px}.plot{overflow-x:auto}td,th{padding:4px;font-size:14px}}
+</style></head><body><main><div class="k">从雪花到运动　/　源码练习 O</div>
+<h1>跟一段视频穿过 HunyuanVideo</h1><p>沿文生视频发布版逐站计算。先用一段 17 帧的小片拆一块潜空间，再切到发布命令的尺寸。源码链接固定在同一版本，形状、图形和采样实验都能离线查看。</p>
+<section id="shapes"><h2>一格模型输出，要写回视频的哪里？</h2>
+<div class="controls"><label>尺寸例子 <select id="preset"><option value="small">教学小片</option><option value="release">发布示例</option><option value="align">高宽需要对齐</option><option value="custom">我的尺寸</option></select></label></div>
+<form id="dims" class="controls"><label>影片帧数 <input type="number" required min="1" max="10001" value="17" id="f"></label><label>高 <input type="number" required min="1" max="8192" value="64" id="h"></label><label>宽 <input type="number" required min="1" max="8192" value="96" id="w"></label><button>计算形状</button></form><p id="error" class="error" role="status"></p>
+<div class="path"><div><small>对齐后的影片 · 帧、高、宽</small><strong id="canvas"></strong></div><div><small>潜码 · 批、通道、时间、高、宽</small><strong id="latent"></strong></div><div><small>视觉块 · 批、序列长、特征宽</small><strong id="seq"></strong></div></div><p id="shapeRead" class="note"></p>
+<div class="controls"><label>块号 <input id="token" type="number" required min="0" value="57"></label><label>输出分量 <output id="partOut">22</output>　<input id="part" type="range" min="0" max="63" value="22"></label></div>
+<p id="gridCaption"></p><div class="grid" id="grid"></div><p class="eq" id="address"></p><p class="note">可以从网格选择邻近块。输出层给每块写回 64 个数，分量可以拆成通道号及 2 × 2 的局部位置。图中地址都是潜空间地址。</p>
+<a href="__SOURCE__hyvideo/modules/models.py#L664-L676">对照作者的 unpatchify</a></section>
+<section id="guidance"><h2>两种引导强度分别送到哪里？</h2><p>从发布例子的参数开始，先调嵌入式强度，看同一个标量如何被编码；再切换外部 CFG，看一次模型调用装几份潜码。</p>
+<div class="controls"><label>嵌入式强度 <output id="gOut"></output>　<input id="embed" type="range" min="0" max="9" value="6" step=".25"></label><label>外部 CFG <select id="cfg"><option value="1">1（发布例子）</option><option value="3">3（双分支）</option></select></label></div>
+<p class="eq" id="batch"></p><div id="compass" class="plot"></div><p id="feature"></p><p class="note">每根指针显示一对余弦和正弦。完整向量有 256 个数，随后交给有权重的网络。此处只计算可核对的输入和前向批大小。</p>
+<a href="__SOURCE__hyvideo/diffusion/pipelines/pipeline_hunyuan_video.py#L962-L1010">看流水线怎样准备两种引导</a> · <a href="__SOURCE__hyvideo/modules/models.py#L584-L599">看引导向量在哪里相加</a></section>
+<section id="clock"><h2>挪动采样点，再跟粒子走一步</h2><p>保留源码的时间表和欧拉更新，把实验 K 的一维双峰速度场放进网络输出的位置。这样我们知道参考终点，可以直接量出换日程带来的误差。</p>
+<div class="controls"><label>网络查询次数 <select id="steps"></select></label><label>时间表 shift <select id="shift"></select></label><label>初始分位 <select id="rank"></select></label></div><div class="controls"><label>查看第 <output id="stepOut"></output> 步　<input id="step" type="range" min="0" max="3" value="0"></label></div>
+<div id="ticks" class="plot"></div><p class="eq" id="arithmetic"></p><div id="plot" class="plot"></div>
+<p class="legend"><span class="teal">●　所选欧拉解</span><span>┄　精确分位轨迹</span><span class="rust">●　当前查询位置</span></p><p id="score"></p>
+<details><summary>比较全部 256 个起点的平均绝对误差</summary><table><thead><tr><th>查询次数</th><th>shift = 1</th><th>shift = 3</th><th>shift = 9</th></tr></thead><tbody id="scores"></tbody></table></details>
+<p class="note">每次回到同一批正态分位起点；所选粒子仅供读图，全批成绩另用 256 个等概率区间中点计算。原始模型的影片质量需要实测视频。</p>
+<a href="__SOURCE__hyvideo/diffusion/schedulers/scheduling_flow_match_discrete.py#L125-L155">读生成日程</a> · <a href="__SOURCE__hyvideo/diffusion/schedulers/scheduling_flow_match_discrete.py#L235-L252">读欧拉更新</a></section></main>
+<script>
+const data=__STUDY__, el=id=>document.getElementById(id),fmt=(x,n=3)=>(Math.abs(x)<.5*10**(-n)?0:x).toFixed(n);
+const T="#00695f",R="#ad492c",I="#193540",G="#c8d7d0";
+const line=(x,y,xx,yy,c=G,w=1,d="")=>'<line x1="'+x+'" y1="'+y+'" x2="'+xx+'" y2="'+yy+'" stroke="'+c+'" stroke-width="'+w+'" stroke-dasharray="'+d+'"/>';
+const circ=(x,y,r,c)=>'<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+c+'"/>';
+const label=(x,y,s,anchor="middle",c=I)=>'<text x="'+x+'" y="'+y+'" fill="'+c+'" font-size="15" text-anchor="'+anchor+'">'+s+'</text>';
+const svg=(h,body,title)=>'<svg viewBox="0 0 660 '+h+'" role="img" aria-label="'+title+'">'+body+'</svg>';
+let layout;
+function shape(){
+ const f=+el("f").value,h=+el("h").value,w=+el("w").value;
+ if(!el("dims").reportValidity())return;
+ if((f-1)%4){el("error").textContent="此版本要求帧数为 4k+1。可以取 "+(Math.floor((f-1)/4)*4+1)+" 或 "+(Math.ceil((f-1)/4)*4+1)+" 帧。下方保留上次的有效尺寸。";return}
+ el("error").textContent="";const H=Math.ceil(h/16)*16,W=Math.ceil(w/16)*16,t=(f-1)/4+1;
+ layout={t,nh:H/16,nw:W/16,count:t*H/16*W/16};
+ el("canvas").textContent=[f,H,W].join(" × ");el("latent").textContent=[1,16,t,H/8,W/8].join(" × ");el("seq").textContent="1 × "+layout.count.toLocaleString("en-US")+" × 3072";
+ el("shapeRead").textContent="潜时间 "+t+"，每个时间位置切 "+layout.nh+" 行 × "+layout.nw+" 列。高宽分别向上对齐到 16 的倍数。";
+ el("token").max=layout.count-1;el("token").value=Math.max(0,Math.min(layout.count-1,Math.floor(+el("token").value||0)));block();
+}
+function block(){
+ if(!layout||!el("token").validity.valid)return;
+ const id=+el("token").value,k=+el("part").value,{nh,nw}=layout;
+ const t=Math.floor(id/(nh*nw)),r=Math.floor(id/nw)%nh,c=id%nw,ch=Math.floor(k/4),dy=Math.floor(k%4/2),dx=k%2;
+ el("partOut").textContent=k;el("address").textContent="块 "+id+" 在 (时间 "+t+"，块行 "+r+"，块列 "+c+")。分量 "+k+" = 4 × "+ch+" + 2 × "+dy+" + "+dx+"，写回潜码 [0, "+ch+", "+t+", "+(2*r+dy)+", "+(2*c+dx)+"]。";
+ const nr=Math.min(4,nh),nc=Math.min(matchMedia("(max-width:580px)").matches?4:6,nw),r0=Math.min(Math.max(0,r-1),nh-nr),c0=Math.min(Math.max(0,c-2),nw-nc);
+ el("gridCaption").textContent="潜时间 "+t+" · 块行 "+r0+"–"+(r0+nr-1)+"、块列 "+c0+"–"+(c0+nc-1)+"。";
+ const box=el("grid");box.replaceChildren();box.style.gridTemplateColumns="repeat("+nc+",minmax(0,1fr))";
+ for(let y=r0;y<r0+nr;y++)for(let x=c0;x<c0+nc;x++){const index=(t*nh+y)*nw+x,b=document.createElement("button");b.textContent=index;b.setAttribute("aria-pressed",String(id===index));b.onclick=()=>{el("token").value=index;block()};box.append(b)}
+}
+el("dims").onsubmit=e=>{e.preventDefault();el("preset").value="custom";shape()};el("preset").onchange=()=>{
+ const sizes={small:[17,64,96],release:[129,720,1280],align:[65,361,639]}[el("preset").value];
+ if(sizes){["f","h","w"].forEach((id,i)=>el(id).value=sizes[i]);shape()}
+};
+el("token").oninput=block;el("part").oninput=block;
+matchMedia("(max-width:580px)").addEventListener("change",block);
+function guidance(){
+ const g=+el("embed").value,w=+el("cfg").value,batch=w>1?2:1,num=1000*g;
+ el("gOut").textContent=fmt(g,2);el("batch").textContent="提示数 B = 1　·　送入网络的潜码批大小 "+batch+"　·　嵌入式标量 ["+Array(batch).fill(num).join(", ")+"]。"+(w>1?"每一步在同一批次算两份预测，再按外部 CFG 合成。":"每一步只算条件分支。");
+ let fig="";for(const [i,j] of [0,32,64,96].entries()){
+  const cx=82+164*i,cy=53,phase=num*Math.exp(-Math.log(10000)*j/128),co=Math.cos(phase),si=Math.sin(phase),x=cx+32*co,y=cy-32*si;
+  fig+='<circle cx="'+cx+'" cy="'+cy+'" r="32" fill="none" stroke="'+G+'"/>'+line(cx-38,cy,cx+38,cy)+line(cx,cy-38,cx,cy+38)+line(cx,cy,x,y,T,2.5)+circ(x,y,4,R)+label(cx,108,"索引 "+j)+label(cx,132,fmt(co)+"，"+fmt(si));
+ }
+ el("compass").innerHTML=svg(145,fig,"引导强度编码的四对频率");el("feature").textContent="索引 96 的角度是 "+fmt(num/1000)+" 弧度。对应的两个数进入向量第 96 和 224 项（从零数）。";
+}
+el("embed").oninput=guidance;el("cfg").onchange=guidance;
+function populate(id,items){for(const n of items)el(id).add(new Option(n,n))}
+populate("steps",data.budgets);populate("shift",data.shifts);populate("rank",data.ranks);
+el("rank").selectedIndex=data.ranks.indexOf(.75);el("shift").value="3";
+function timetable(){
+ const n=+el("steps").value,g=+el("shift").value,ri=el("rank").selectedIndex,run=data.runs[n][g],tr=run.traces[ri];
+ el("step").max=n-1;const k=Math.min(+el("step").value,n-1);el("step").value=k;el("stepOut").textContent=(k+1)+" / "+n;
+ const s=run.sigma[k],sn=run.sigma[k+1],dt=sn-s,v=tr.v_sigma[k],x=tr.x[k];
+ const px=t=>45+566*t;let mark=label(45,25,"噪声端","start")+label(611,25,"数据端","end")+line(45,47,611,47,G,3);
+ run.sigma.forEach((a,i)=>mark+=circ(px(1-a),47,i===k?6:3.3,i===k?R:T));
+ mark+=line(px(1-s),59,px(1-sn),59,R,3);el("ticks").innerHTML=svg(73,mark,"当前调度器查询点和所走区间");
+ el("arithmetic").textContent="模型时间 "+fmt(1000*s,2)+"　·　σ 从 "+fmt(s,5)+" 到 "+fmt(sn,5)+"。新位置 = "+fmt(x,5)+" + ("+fmt(dt,5)+") × ("+fmt(v,5)+") = "+fmt(tr.x[k+1],5)+"。";
+ const extent=3.2,py=x=>108-78*x/extent;
+ let fig="";for(const y of [-3,0,3])fig+=line(45,py(y),611,py(y),G,1,"3 3")+label(32,py(y)+4,y,"end");
+ for(const t of [0,.25,.5,.75,1])fig+=label(px(t),216,t);
+ const curve=(coords,color,dash)=>'<polyline points="'+coords.map(p=>p.join(",")).join(" ")+'" fill="none" stroke="'+color+'" stroke-width="2.6" stroke-dasharray="'+dash+'"/>';
+ fig+=curve(data.exact[ri].map((u,i)=>[px(i/64),py(u)]),I,"4 3");
+ fig+=curve(tr.x.map((u,i)=>[px(1-run.sigma[i]),py(u)]),T,"");tr.x.forEach((u,i)=>fig+=circ(px(1-run.sigma[i]),py(u),i===k?5.5:3.3,i===k?R:T));
+ fig+=label(45,20,"位置","start")+label(611,239,"生成进度 τ","end");el("plot").innerHTML=svg(246,fig,"数值轨迹和精确分位轨迹");
+ el("score").textContent="第 "+Math.round(tr.q*100)+" 百分位　·　数值终点 "+fmt(tr.x[n],5)+"，分位参考 "+fmt(tr.ref[n],5)+"。全部 "+data.pairs+" 个起点的平均绝对误差 "+fmt(run.mae,5)+"。";
+ const table=el("scores");table.replaceChildren();for(const b of data.budgets){const r=table.insertRow();r.insertCell().textContent=b;for(const s of data.shifts){const c=r.insertCell();c.textContent=fmt(data.runs[b][s].mae,5);if(b===n&&s===g)c.className="current"}}
+}
+for(const id of ["steps","shift","rank"])el(id).onchange=timetable;el("step").oninput=timetable;
+shape();guidance();timetable();
+</script></body></html>

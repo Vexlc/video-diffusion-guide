@@ -1,0 +1,47 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>按页找实验 · 从雪花到运动</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#edf3ef;color:#17383d;font:17px/1.68 "MiSans","Microsoft YaHei",sans-serif}main{max-width:920px;margin:auto;padding:clamp(14px,4vw,40px)}h1{font:700 clamp(32px,6vw,52px)/1.2 "Noto Serif CJK SC",serif;margin:12px 0}a{color:#00665b;text-underline-offset:3px}header p{margin:8px 0}form{background:white;border-top:3px solid #00695e;padding:clamp(12px,2.5vw,20px);margin:16px 0 6px}label{display:block;font-weight:650}.field,nav,.examples{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.field{margin:7px 0}.field input{flex:1 1 150px;min-width:80px;padding:7px 10px}button,input{font:inherit}button,.primary,.examples a{border:1px solid #77948d;border-radius:4px;color:inherit;background:#fff;padding:4px 10px;cursor:pointer}.field button,.primary{background:#00685c;color:white;text-decoration:none}.examples a{font-size:14px;color:#006257;text-decoration:none}.examples{margin-top:9px}.status{font-size:15px;color:#395c5b;margin:10px 0}.card{background:#fff;margin:8px 0;border:1px solid #ccdcd4;border-radius:5px}.card>summary{font-weight:650;padding:12px 15px;cursor:pointer}.card[open]{border-left:4px solid #00685c}.page{font-variant-numeric:tabular-nums;color:#00685c;margin-right:7px}.body{padding:0 clamp(12px,3vw,23px) 12px}.part{color:#536c68;font-size:14px;margin:0}.formula{font-weight:650;padding:8px 11px;background:#edf4ec}.action{margin:9px 0}nav{gap:9px 18px}details.code{margin:13px 0 2px;padding-top:10px;border-top:1px solid #d6e0d8}.code summary{cursor:pointer}.code p{font-size:15px}.code pre{max-height:365px;overflow:auto;padding:10px 12px;color:#e5f2ee;background:#19393d;border-radius:4px;font:14px/1.55 "DejaVu Sans Mono",monospace}.code code{overflow-wrap:anywhere}.code pre code{overflow-wrap:normal}.empty{padding:14px 16px;background:#fff5da}.empty p{margin-top:0}button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible,pre:focus-visible{outline:3px solid #bd6a2f;outline-offset:2px}[hidden]{display:none!important}
+#symbols{margin:12px 0;padding:10px 14px;background:#fff;border:1px solid #ccdcd4;border-radius:4px}#symbols summary{font-weight:bold;cursor:pointer}#symbols dl{display:grid;grid-template-columns:minmax(62px,auto) 1fr;gap:9px 14px}#symbols dt{color:#00695f;font-weight:700}#symbols dd{margin:0}#symbols a{white-space:nowrap}</style></head><body><main><header><a href="index.html">返回离线学习包</a>　<a href="video-diffusion-lab.html#studyMap">按主题阅读</a><h1>按页找实验</h1><p>输入讲义页码，或搜一个术语。展开问题就能对照算式、动手操作，再读实现这一步的 Python 函数。</p></header>
+<form id="lookup" role="search"><label for="query">页码或关键词</label><div class="field"><input id="query" name="q" type="search" placeholder="例如 31、流匹配、CFG" autocomplete="off"><button>查找</button></div>
+<div class="examples"><a href="#p8">8　还原一个像素</a><a href="#p10">10　合成两支箭头</a><a href="#p16">16　零出口的第一步</a><button type="button" id="all">全部页</button></div></form>
+<details id="symbols"><summary>按符号找公式</summary><dl>__SYMBOLS__</dl></details>
+<p class="status" id="status" aria-live="polite">共 __COUNT__ 页，可直接展开问题。</p>
+<div id="empty" class="empty" hidden><p>没有找到这一页或术语。可输入 1–__COUNT__ 的整数，也可试试“采样”“潜空间”或“控制”。</p><button type="button" id="clear">清除搜索</button></div>
+<section id="cards" aria-label="讲义问题">__CARDS__</section></main>
+<script>
+"use strict";
+const query=document.getElementById("query"),cards=Array.from(document.querySelectorAll("details.card"));
+const norm=s=>s.normalize("NFKC").trim().toLowerCase();
+const records=cards.map(card=>({card,keywords:norm([card.dataset.search,card.querySelector("summary").textContent,
+  card.querySelector(".formula").textContent,card.querySelector(".action").textContent,card.querySelector(".part").textContent,
+  card.querySelector(".primary").textContent,card.querySelector(".code a").textContent].join(" "))}));
+function select(value){
+  query.value=value;
+  const word=norm(value), page=word.match(/^(?:第\s*)?(\d+)\s*(?:页)?$/),terms=word.split(/\s+/).filter(Boolean);
+  let count=0;
+  for(const {card,keywords} of records){
+    const hit=page?card.id==="p"+Number(page[1]):terms.every(term=>keywords.includes(term));
+    card.hidden=!hit;card.open=Boolean(hit&&page);if(hit)count++;
+  }
+  if(count===1){const only=cards.find(card=>!card.hidden);only.open=true}
+  document.getElementById("empty").hidden=count!==0;
+  document.getElementById("status").textContent=word?"找到 "+count+" 页。":"共 __COUNT__ 页，可直接展开问题。";
+}
+function loadRoute(){
+  const params=new URLSearchParams(location.search),anchor=location.hash.slice(1);
+  if(anchor==="symbols"){document.getElementById("symbols").open=true;select("");return}
+  if(/^p\d+$/.test(anchor))select(anchor.slice(1));
+  else if(anchor.startsWith("q="))select(new URLSearchParams(anchor).get("q")||"");
+  else select(anchor==="all"?"":params.get("q")||"");
+}
+function commit(){
+  const val=query.value.trim(),numeric=norm(val).match(/^(?:第\s*)?(\d+)\s*(?:页)?$/);
+  const next=numeric?"p"+Number(numeric[1]):val?"q="+encodeURIComponent(val):"all";
+  if(location.hash.slice(1)===next)loadRoute();else location.hash=next;
+}
+document.querySelectorAll(".examples a,#symbols a").forEach(link=>link.addEventListener("click",()=>select(link.hash.slice(2))));
+query.addEventListener("input",()=>select(query.value));
+document.getElementById("lookup").onsubmit=e=>{e.preventDefault();commit()};
+for(const id of ["all","clear"])document.getElementById(id).onclick=()=>{query.value="";commit();query.focus()};
+window.addEventListener("hashchange",loadRoute);loadRoute();
+</script></body></html>

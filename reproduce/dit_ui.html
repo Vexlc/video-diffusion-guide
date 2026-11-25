@@ -1,0 +1,71 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>方向指令怎样进入视频 · 实验 M</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f4f4ec;color:#193540;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:920px;margin:auto;padding:clamp(15px,4vw,40px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.3}h1{font-size:clamp(30px,6vw,51px);margin:6px 0 9px}h2{font-size:clamp(22px,4vw,28px);margin:0 0 8px}p{margin:6px 0 12px}.k{font-weight:bold;color:#00695f}section{border:1px solid #cbd9cf;border-radius:8px;background:white;margin:17px 0;padding:clamp(13px,3vw,25px)}.controls{display:flex;gap:10px 19px;flex-wrap:wrap;align-items:center;margin:12px 0}label,.tag{font-size:15px;font-weight:650}button,select{font:inherit;color:inherit;padding:5px 9px;background:white;border:1px solid #9cafa4;border-radius:5px}button{cursor:pointer}input{accent-color:#00695f;vertical-align:middle;max-width:100%}.maps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.group{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.group button{padding:5px 2px;font-variant-numeric:tabular-nums;line-height:1.4}.group small,.group b{display:block}.group [aria-pressed=true]{outline:3px solid #a64423;outline-offset:0}.groupTitle{font-weight:650;font-size:15px}.score{padding:8px 12px;border-left:4px solid #00695f;background:#eaf4ed}.eq{font-variant-numeric:tabular-nums;border-radius:5px;background:#f1f3e9;padding:10px}.film{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}.film img{width:100%;image-rendering:pixelated}.film .active{outline:2px solid #ef9c4e;outline-offset:-2px}.tag{display:block;margin:9px 0 3px}.zooms{display:flex;flex-wrap:wrap;gap:14px;margin:10px 0}.zooms figure{margin:0}.zooms img{width:clamp(92px,23vw,154px);image-rendering:pixelated;display:block}.note,figcaption{font-size:14px;color:#4c6265}output{font-variant-numeric:tabular-nums}
+@media(max-width:520px){.maps{gap:6px}.groupTitle{font-size:13px}.group small{font-size:11px}.group b{font-size:12px}.group{gap:3px}.controls{gap:8px 11px}}
+</style></head><body><main><div class="k">从雪花到运动　/　实验 M</div><h1>方向指令怎样进入视频？</h1><p>用只有“向左”“向右”两个方向标签的小世界，把视频块之间的通信和 CFG 引导分开观察。先点一个块，再沿同一份雪花分别生成左右两题。__MESSAGE_LINK__</p>
+<section><h2>点一个块，看它向谁取信息</h2><p>18 个按钮各代表一个潜变量块。橙框是当前查询，每格百分数是它分给这个键的权重。换一层、一个头，再看分布是否相同。</p>
+<div class="controls"><label>条件 <select id="condition"><option value="left">向左</option><option value="right">向右</option><option value="empty">空条件</option></select></label><label>层 <select id="layer"><option>1</option><option>2</option></select></label><label>头 <select id="head"><option>1</option><option>2</option><option>3</option></select></label><label><input id="mask" type="checkbox"> 只保留本帧组，重算这一行</label></div>
+<div class="maps" id="maps"></div><p id="tokenInfo" class="eq"></p><p id="rowInfo" class="score"></p><p class="note">同一带噪输入，生成进度 0.5。勾选后，仅将这行外组权重归零，再把本组合计归一到 100%。下方“整网封住跨组”使用另一次完整采样。</p></section>
+<section><h2>在同一个路口，把两支速度合成一支</h2><p>沿用上栏选中的块，选择其中一个分量。这里直接用模型在同一输入上给出的两个速度数值运算。把 w 从 0 调到 1，再调到 2，留意哪一个量翻倍。</p>
+<div class="controls"><label>方向 <select id="dir"><option value="left">向左</option><option value="right">向右</option></select></label><label>分量 <select id="component"><option>0</option><option>1</option><option>2</option><option>3</option></select></label><label>引导 w = <output id="wOut"></output>　<input id="w" type="range" min="0" max="8" step=".25" value="2"></label></div>
+<p class="eq" id="math"></p><p id="step"></p><p class="note">这一步使用整网正常通信的预测，只计算一次局部更新。生成六帧影片时，每一步都要在新状态上重新求速度。</p></section>
+<section id="movies"><h2>固定初始噪声，两道相反指令并排播放</h2><p>不同引导强度对应独立完成的采样。先选 w = 0，再改为 w = 1，沿着最亮的方块从第 0 帧看到第 5 帧。默认展示预选的第一份噪声。</p>
+<div class="controls"><label>噪声 <select id="case"></select></label><label>整段采样 <select id="mode"></select></label><label>电影帧 <output id="fOut"></output>　<input id="frame" type="range" min="0" max="5" value="0"></label><button id="play">播放六帧</button></div>
+<div class="tag">指令向左</div><div class="film" id="leftFilm"></div><div class="tag">指令向右</div><div class="film" id="rightFilm"></div>
+<div class="zooms"><figure><img id="leftZoom" alt="向左任务当前帧"><figcaption>向左任务</figcaption></figure><figure><img id="rightZoom" alt="向右任务当前帧"><figcaption>向右任务</figcaption></figure></div>
+<p id="single"></p><p id="cohort" class="score"></p></section></main><script>
+const data=__DIT_DATA__, el=id=>document.getElementById(id), fmt=x=>x.toFixed(3);
+let query=8,timer=null;
+for(let g=0;g<3;g++){
+  const pane=document.createElement("div"),title=document.createElement("div"),grid=document.createElement("div");
+  title.id="title"+g;title.className="groupTitle";grid.className="group";
+  for(let j=0;j<6;j++){
+    const i=6*g+j,btn=document.createElement("button"),tag=document.createElement("small"),value=document.createElement("b");
+    btn.id="key"+i;tag.textContent="块 "+i;btn.append(tag,value);btn.onclick=()=>{query=i;attention()};grid.append(btn);
+  }
+  pane.append(title,grid);el("maps").append(pane);
+}
+function attention(){
+  const info=data.probe.answers[el("condition").value];
+  const weights=info.maps[el("layer").selectedIndex][el("head").selectedIndex][query],group=Math.floor(query/6);
+  const same=weights.slice(6*group,6*group+6).reduce((s,v)=>s+v,0),masked=el("mask").checked;
+  const actual=weights.map((v,i)=>masked?(Math.floor(i/6)===group?v/same:0):v);
+  actual.forEach((weight,i)=>{
+    const button=el("key"+i);
+    button.lastElementChild.textContent=(100*weight).toFixed(1)+"%";
+    button.style.backgroundColor="rgb("+[240-240*weight,246-148*weight,237-150*weight].map(Math.round).join(",")+")";
+    button.style.color=weight>.57?"white":"#193540";button.setAttribute("aria-pressed",String(i===query));
+    button.setAttribute("aria-label","选择第 "+i+" 块作查询，当前权重 "+(100*weight).toFixed(2)+"%");
+  });
+  for(let g=0;g<3;g++){const mass=actual.slice(6*g,6*g+6).reduce((s,v)=>s+v,0);el("title"+g).textContent="组 "+g+" · "+(mass*100).toFixed(1)+"%"}
+  const row=Math.floor(query%6/2),col=(query%2)*2,token=data.probe.tokens[query];
+  el("tokenInfo").textContent="块 "+query+" → 帧组 "+group+"、行 "+row+"、列 "+col+" 和 "+(col+1)+"。两个通道拆出的四个数为 ["+token.map(fmt).join("，")+"]。";
+  el("rowInfo").textContent="本行总和 "+actual.reduce((s,v)=>s+v,0).toFixed(5)+"　·　允许全图通信时，组外占 "+((1-same)*100).toFixed(1)+"%。";
+  arithmetic();
+}
+function arithmetic(){
+  const j=el("component").selectedIndex,w=+el("w").value,ans=data.probe.answers;
+  const u=ans.empty.velocity[query][j],c=ans[el("dir").value].velocity[query][j],v=u+w*(c-u),x=data.probe.tokens[query][j];
+  el("wOut").textContent=w.toFixed(2);el("math").textContent="块 "+query+"，分量 "+j+"　·　空条件 "+fmt(u)+"　·　有条件 "+fmt(c)+"　·　差值 "+fmt(c-u)+"　·　合成速度 "+fmt(v);
+  el("step").textContent="若从这个位置再走 1/"+data.steps+"，该分量将从 "+fmt(x)+" 走到 "+fmt(x+v/data.steps)+"。";
+}
+for(let i=0;i<8;i++)el("case").add(new Option("起点 "+(i+1),i));
+for(const s of data.scales)el("mode").add(new Option("w = "+s,s));
+el("mode").add(new Option("w = 1 · 整网封住跨组","local"));el("mode").value="1";
+function stop(){clearInterval(timer);timer=null;el("play").textContent="播放六帧"}
+function film(){
+  const key=el("mode").value,i=+el("case").value,f=+el("frame").value,stats=data.stats[key];
+  for(const [offset,side] of [[0,"left"],[1,"right"]]){
+    const row=data.films[key][2*i+offset],strip=el(side+"Film");
+    if(strip.dataset.row!==key+"-"+i){strip.replaceChildren();row.forEach((src,k)=>{const im=new Image();im.src=src;im.alt="第 "+k+" 帧";strip.append(im)});strip.dataset.row=key+"-"+i}
+    [...strip.children].forEach((im,k)=>im.classList.toggle("active",k===f));el(side+"Zoom").src=row[f];
+  }
+  el("fOut").textContent=f;
+  el("single").textContent="这一对首末中心的横向位移　·　向左题 "+stats.first_dx[2*i]+" 格　·　向右题 "+stats.first_dx[2*i+1]+" 格。";
+  el("cohort").textContent="全部 "+(2*data.pairs)+" 道题　·　指定方向正确 "+stats.direction+" 道，六帧全中指定方向合法路线 "+stats.strict+" 道，覆盖 "+stats.unique+" 条不同的全中路线。"+data.pairs+" 对中两道方向同时正确 "+stats.both+" 对。";
+}
+for(const id of ["condition","layer","head","mask"])el(id).onchange=attention;
+el("dir").onchange=arithmetic;el("component").onchange=arithmetic;el("w").oninput=arithmetic;
+el("case").onchange=()=>{stop();film()};el("mode").onchange=()=>{stop();film()};el("frame").oninput=()=>{stop();film()};
+el("play").onclick=()=>{if(timer){stop();return}el("frame").value=0;film();el("play").textContent="暂停";timer=setInterval(()=>{el("frame").value=+el("frame").value+1;film();if(+el("frame").value===5)stop()},360)};
+attention();film();
+</script></body></html>

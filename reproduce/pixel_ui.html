@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>像素放映室 · 真正训练的微型视频扩散网络</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eff4f0;color:#193540;font:17px/1.7 "MiSans","Noto Sans CJK SC",sans-serif}main{max-width:900px;margin:auto;padding:24px}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.4}h1{font-size:clamp(30px,5vw,46px);margin:8px 0}h2{font-size:24px;margin:0}small{font-size:14px;color:#405e61}.tag{font-weight:700;color:#00695f;letter-spacing:.12em}section{background:white;padding:clamp(12px,3vw,25px);margin:20px 0;border-radius:7px}.controls,nav{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}.controls{padding:11px;background:#eaf3ed}select,button,input,output{font:inherit;accent-color:#00695f}button,select{background:white;border:1px solid #839b95;padding:5px 12px;border-radius:4px}button{cursor:pointer}.plot svg{display:block;width:100%;height:auto}.readout{border-left:3px solid #00695f;background:#edf5ef;padding:9px 13px}.player{display:grid;grid-template-columns:minmax(130px,240px) 1fr;align-items:center;gap:20px}.player img{width:100%;image-rendering:pixelated}.hint{color:#495f66}a{color:#00695f}summary{cursor:pointer}code{overflow-wrap:anywhere}@media(max-width:550px){main{padding:12px}.plot{overflow:auto}.plot svg{min-width:530px}.player{grid-template-columns:1fr}.player img{max-width:225px}}
+</style><body><main><div class="tag">像素放映室　/　实验 I</div><h1>它真的学会把雪花画成运动了吗？</h1>
+<p>这次不再让程序替模型选轨迹。两台网络都只输出一排排亮度值。先看有原片可核对的去噪，再看没有原片可抄的生成，最后只换掉邻帧做一次检查。</p>
+__CLOCK_LINK__
+<section><div class="controls"><label>固定样本 <select id="clip"></select></label><label>观察方式 <select id="kind"><option value="probe">① 已知原片：去噪</option><option value="sampling">② 从纯噪声：逐步生成</option><option value="models" selected>③ 同一起点：三种模型状态</option><option value="neighbors">④ 第 2 帧不动：换邻帧</option></select></label></div>
+<div class="plot" id="film"></div><p class="readout" id="readout" aria-live="polite"></p>
+<small>显示灰度统一裁剪至 [−1, 1]，所有误差均用裁剪之前的浮点值。面板①④使用有参考的八段验证输入，面板②③使用另一批独立起始噪声的前八段；相同编号不表示是同一原片。</small></section>
+<section><h2>播放一段实际生成的像素</h2><p>这是面板③最下排的跨帧网络输出，不是根据检测到的中心重新画的方块。</p>
+<div class="player"><img id="preview" alt="当前视频帧"><div><div class="controls"><label>帧 <input id="frame" type="range" min="0" max="5" value="0"> <output id="frameOut">0</output></label><button id="play">播放六帧</button></div><p class="hint">想找失败例？不换模型，逐个切换固定样本，看看有没有亮斑跳跃或断开的帧。</p></div></div></section>
+<section><h2>不要只相信一段样片</h2><div class="plot" id="curve"></div><p class="readout" id="summary"></p><details><summary>怎样读这三个指标？</summary>
+<p>每帧像素误差：每帧可以独立找最像的合法方块图。整片像素误差：同一条合法路线必须解释全部六帧。严格命中：每帧最亮的 3×3 窗口中心必须逐帧等于某条合法路线；并列时取行优先的第一个位置。前两项用未裁剪像素的均方误差。</p></details></section>
+<section><b>自己复现：</b>在 <code>reproduce</code> 目录运行 <code>python pixel_lab.py --device cpu --replay ../pixel-lab/weights.pt</code> 从权重重新采样；去掉 <code>--replay</code> 及其路径就从零训练。此可选脚本需要 <a href="https://pytorch.org/get-started/locally/">PyTorch</a>；只看本页不需要安装。查看 <code>numbers.json</code> 可核对未舍入指标。</section>
+</main><script id="data" type="application/json">__PIXEL_PAYLOAD__</script><script>
+const get=id=>document.getElementById(id), data=JSON.parse(get("data").textContent);
+data.panels.forEach((panel,index)=>{const option=document.createElement("option");option.textContent="样本 "+(index+1);get("clip").append(option)});
+const texts={probe:"先把两排估计和第一排原片对比。输入相同；这里只做一次去噪估计，不是从头生成。",sampling:"第一行是起点。后三行显示不同生成步骤对干净片的猜测，并非三个真实电影时刻。",models:"最高一排和最低一排是同一跨帧架构训练前后。中间一排使用同样多参数，自己逐帧看。",neighbors:"两排的橙框输入逐像素相同。第二排的其余帧来自另一段带噪短片；下方两种估计都只考第 2 帧。"};
+function show(){const index=get("clip").selectedIndex, key=get("kind").value;get("film").innerHTML=data.panels[index][key];get("readout").textContent=texts[key]+(key==="models"?" 此样本的整片模板误差（逐帧 / 跨帧）："+data.scores.single.per_clip[index].toFixed(3)+" / "+data.scores.joint.per_clip[index].toFixed(3)+"。":"");frame();}
+function frame(){get("preview").src=data.previews[get("clip").selectedIndex][Number(get("frame").value)];get("frameOut").textContent=get("frame").value}
+let timer=null;function stop(){clearInterval(timer);timer=null;get("play").textContent="播放六帧"}
+get("clip").onchange=()=>{stop();get("frame").value=0;show()};get("kind").onchange=show;get("frame").oninput=()=>{stop();frame()};
+get("play").onclick=()=>{if(timer!==null){stop();return}get("frame").value=0;frame();get("play").textContent="暂停";timer=setInterval(()=>{get("frame").value=Number(get("frame").value)+1;frame();if(get("frame").value==="5")stop()},350)};
+get("curve").innerHTML=data.loss;
+const one=data.scores.single,two=data.scores.joint;
+get("summary").textContent="同一批 "+data.setup.test_clips+" 个生成起点。逐帧 / 跨帧：单帧像素误差 "+one.frame_mse.toFixed(3)+" / "+two.frame_mse.toFixed(3)+"；整片像素误差 "+one.clip_mse.toFixed(3)+" / "+two.clip_mse.toFixed(3)+"；严格命中 "+one.route_hits+" / "+two.route_hits+" 段。";
+show();
+</script></body></html>

@@ -1,0 +1,99 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>把扩散 v 换成直线速度</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#edf2ed;color:#193540;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:900px;margin:auto;padding:clamp(10px,3vw,32px)}header,section{background:#fffdf8;border:1px solid #cdd9d0;border-radius:7px;padding:clamp(14px,3vw,26px);margin-bottom:14px}header{border-top:4px solid #00695f}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.35;margin:0 0 10px}h1{font-size:clamp(27px,5vw,42px)}h2{font-size:clamp(20px,3vw,28px)}p{margin:8px 0}a{color:#00675c}nav,.controls{display:flex;gap:8px 16px;align-items:center;flex-wrap:wrap;margin:12px 0}label{display:inline-flex;align-items:center;gap:6px}button,select,input{font:inherit;color:inherit}button,select{background:#fffdf7;border:1px solid #91a8a0;border-radius:4px;padding:3px 6px}button,select,input[type=range],canvas[data-click]{cursor:pointer}input[type=range]{max-width:120px;accent-color:#00695f}figure{margin:8px 0}figure svg{width:100%;height:auto;display:block}.box,.note{padding:9px 12px;background:#e9f2eb;border-left:3px solid #00695f}.note{background:#fbefe0;border-color:#ae6431}.split{display:flex;flex-wrap:wrap;align-items:center;gap:16px}.split>div{flex:1;min-width:min(230px,100%)}canvas{image-rendering:pixelated;display:block;background:#e2e8e2}.zoom{width:160px;height:120px}small{color:#486168}.strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;max-width:650px}.strip canvas{width:100%;height:auto}.filmrow{margin:14px 0}.filmrow strong{margin-right:10px}.formula{font-variant-numeric:tabular-nums}details{margin-top:12px}code{overflow-wrap:anywhere}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:5px;border-bottom:1px solid #d4ded6;font-variant-numeric:tabular-nums}th{font-size:14px}.zoomControls button[aria-pressed=true]{color:white;background:#08675e}@media(max-width:500px){main{padding:8px}section{padding:12px}.strip{gap:2px}.filmrow small{display:block}figure{overflow:hidden}}
+</style></head><body><main><header><h1>把扩散 v 换成直线速度</h1><p>第 75–77 页。先拿一个已知像素配两份数，再用训练过的视频网络检验整段影片。</p>__GUIDE__<nav><a href="#pair">用一个像素换算</a><a href="#step">在影片里选一格</a><a href="#films">对照四排影片</a></nav></header>
+<section id="pair"><h2>同样的比例，两张配方</h2><p>干净值 y = 0.8。圆弧上的两份系数平方和为 1；每份各除以两份之和，就落到斜直线上。图中细线把同一比例的两点连到原点。</p>
+<div class="controls"><label>噪声 ε <select id="noise"><option value="-1">−1</option><option value="1">+1</option></select></label><label>圆弧干净系数 a <input type="range" id="signal" min="0" max="100" value="80"><output id="signalOut"></output></label><button id="reset">回到书中例题</button></div>
+<div class="controls zoomControls"><button data-view="0 0 660 303" aria-pressed="true">两栏</button><button data-view="0 0 305 303" aria-pressed="false">放大路径</button><button data-view="305 28 350 245" aria-pressed="false">放大数值</button></div>
+<figure id="geometry">__GEOMETRY__</figure><p id="pairRead" class="box formula"></p><p id="recover"></p>
+<details><summary>终端中复算当前配比</summary><code id="pairCommand"></code><p>在解压包的 reproduce 目录执行。命令最后一项是圆弧干净系数。</p></details>
+<details><summary>固定配对与模型估计有什么关系？</summary><p>训练题有已知的 y、ε。实际采样时，模型从当前状态和时刻估计 v。直线状态与圆弧状态能彼此换回，所以在同一批配对、同一条件下，先算条件平均再换算，与先换算每题标签再取条件平均一致。不同训练集或不同配对方式会改变平均速度。</p></details></section>
+<section id="step"><h2>从真实影片选一格，重做一步</h2><p>沿用实验 I 的八段录像。下面只拿当次模型输出做一步换算，比较原采样器实际保存的下一格。样片、帧、行、列从 0 数。</p>
+<div class="controls"><label>样片 <select id="case"></select></label><label>已完成更新 <select id="stepNo"></select></label><label>帧 <select id="frame"></select></label><label>行 <select id="row"></select></label><label>列 <select id="col"></select></label></div>
+<div class="split"><figure><canvas data-click="1" id="zoom" class="zoom" width="160" height="120" aria-label="当前帧，点击换格；也可用行列下拉框"></canvas><figcaption><small>原圆弧状态，橙框为所选像素</small></figcaption></figure><div><p id="clock"></p><p id="units" class="box formula"></p></div></div>
+<table><thead><tr><th>同一步怎样走</th><th>下一格的直线读数</th></tr></thead><tbody id="compare"></tbody></table><p id="equation" class="formula"></p>
+<details><summary>终端中核对这个位置</summary><code id="command"></code><p>在解压包的 reproduce 目录运行，只需 Python 标准库。</p></details></section>
+<section id="films"><h2>让四种走法各自生成六帧</h2><p>每一排都从相同雪花独立调用网络 24 次。换算时先把直线状态和时刻还原给模型，再把返回的 v 换成直线速度。第四排单独改变查询的时间刻度。</p><div class="controls"><label>起始雪花 <select id="movieCase"></select></label><label>显示 <select id="display"><option value="image">终点画面</option><option value="diff">每格减去原版</option></select></label></div><div id="strips"></div><div class="controls"><label>读数的帧 <select id="mf"></select></label><label>行 <select id="mr"></select></label><label>列 <select id="mc"></select></label></div><p id="spot" class="box"></p><p>可点任一排的画面选格。差图共用 ±0.04 的色阶。接近白表示差接近零，蓝表示比原版暗，橙表示比原版亮。超过量程的差仍可读到数值。</p>
+<p class="note">误差以同一份噪声生成的原版 DDIM 终点为参照，使用显示截断前的数值。每段有 6×12×16 个数，全体共 8 段。黑白显示把低于 −1、高于 +1 的值分别裁到黑与白。</p>
+<details><summary>重跑四次采样</summary><code>python3 path_rollout.py --out replay/path-clock</code><p>运行需要 CPU 和 PyTorch。新生成的网页与同目录的 clock-data.js 配套。每排最后的影片、误差和时间节点在 path-runs.json 中。</p></details></section></main>
+<script src="clock-data.js"></script><script type="application/json" id="result">__RESULTS__</script><script>
+'use strict';
+const el=id=>document.getElementById(id),value=id=>Number(el(id).value),fmt=x=>Math.abs(x)<1e-10?'0':Math.abs(x)<.0001?x.toExponential(3):x.toFixed(6);
+const results=JSON.parse(el('result').textContent);
+function pair(){
+ const y=.8,z=value('noise'),a=value('signal')/100,b=Math.sqrt(1-a*a),sum=a+b,t=a/sum;
+ const x=a*y+b*z,v=a*z-b*y,u=(a-b)*x-sum*v;
+ el('signalOut').textContent=a.toFixed(2);
+ el('pairCommand').textContent='python3 path_coordinates.py --pair 0.8 '+z+' --signal '+a.toFixed(2);
+ for(const [mark,c,d] of [['arcDot',a,b],['lineDot',t,1-t]]){
+  el(mark).setAttribute('cx',63+195*c);el(mark).setAttribute('cy',243-195*d);
+ }
+ el('ray').setAttribute('x2',63+195*a);el('ray').setAttribute('y2',243-195*b);
+ for(const [i,c,d,state,vel] of [[0,a,b,x,v],[1,t,1-t,x/sum,u]]){
+  el('coeff'+i).textContent='干净 × '+c.toFixed(3)+'  +  噪声 × '+d.toFixed(3);
+  el('read'+i).textContent='像素 '+fmt(state)+'　 '+(i?'u':'v')+' = '+fmt(vel);
+ }
+ el('pairRead').textContent='圆弧已走过总角度的 '+((1-2*Math.atan2(b,a)/Math.PI)*100).toFixed(1)+'%，对应直线进度 τ = a/(a+σ) = '+fmt(t)+'。圆弧像素 '+fmt(x)+' 除以系数和 '+fmt(sum)+'，得直线像素 '+fmt(x/sum)+'。';
+ el('recover').textContent='由圆弧状态和 v 读回 ŷ = ax−σv = '+fmt(a*x-b*v)+'，ε̂ = σx+av = '+fmt(b*x+a*v)+'。两端相减得到 u = '+fmt(u)+'。';
+}
+function decode(s){
+ const bytes=Uint8Array.from(atob(s),c=>c.charCodeAt(0)),view=new DataView(bytes.buffer);
+ return Float32Array.from({length:bytes.length/4},(_,i)=>view.getFloat32(i*4,true));
+}
+const [cases,frames,height,width]=clockRecording.shape,plane=height*width,stride=cases*frames*plane;
+const xs=decode(clockRecording.states),vs=decode(clockRecording.velocities);
+const ends=Object.fromEntries(Object.entries(results.rows).map(([k,r])=>[k,decode(r.end.data)]));
+function options(id,n,initial=0){for(let i=0;i<n;i++)el(id).add(new Option(i,i));el(id).value=initial}
+for(const [id,n,v] of [['case',cases,0],['stepNo',clockRecording.steps,12],['frame',frames,2],['row',height,5],['col',width,7],['movieCase',cases,0],['mf',frames,2],['mr',height,3],['mc',width,8]])options(id,n,v);
+function paint(canvas,arr,start,block=1,reference=null){
+ canvas.width=width*block;canvas.height=height*block;
+ const ctx=canvas.getContext('2d');
+ for(let i=0;i<plane;i++){
+  const g=Math.max(0,Math.min(255,Math.round(127.5*(arr[start+i]+1))));
+  let rgb=[g,g,g];
+  if(reference){
+   const d=arr[start+i]-reference[start+i],t=Math.min(1,Math.abs(d)/.04);
+   rgb=(d<0?[13,103,147]:[190,78,26]).map(c=>Math.round(247+t*(c-247)));
+  }
+  ctx.fillStyle='rgb('+rgb.join(',')+')';ctx.fillRect((i%width)*block,Math.floor(i/width)*block,block,block);
+ }
+}
+function pixel(){
+ const k=value('case'),n=value('stepNo'),f=value('frame'),row=value('row'),col=value('col');
+ const start=n*stride+(k*frames+f)*plane,i=start+row*width+col,x=xs[i],v=vs[i];
+ const [a,b,c,d]=clockRecording.coefficients[n],tau=a/(a+b),to=c/(c+d),dt=to-tau;
+ const line=x/(a+b),u=(a-b)*x-(a+b)*v,ref=xs[i+stride]/(c+d);
+ paint(el('zoom'),xs,start,10);const ctx=el('zoom').getContext('2d');ctx.strokeStyle='#ffab25';ctx.lineWidth=2;ctx.strokeRect(10*col+1,10*row+1,8,8);
+ el('clock').textContent='第 '+(n+1)+' 次调用。圆弧时钟 t = '+fmt((clockRecording.steps-n)/clockRecording.steps)+'。对应直线进度从 '+fmt(tau)+' 到 '+fmt(to)+'，步长 '+fmt(dt)+'。'+(n===0?'起点的理论进度为零；单精度记录可能带有约 0.00000004 的舍入误差。':'');
+ el('units').textContent='圆弧 x = '+fmt(x)+'，v̂ = '+fmt(v)+'。直线 X = '+fmt(line)+'，û = '+fmt(u)+'。';
+ const rows=[['换算为直线速度',line+dt*u],['原版下一格换直线单位',ref],['直接拿 v 走',line+dt*v],['只改 v 的正负号',line-dt*v]];
+ el('compare').replaceChildren();
+ for(const [name,num] of rows){const tr=el('compare').insertRow();tr.insertCell().textContent=name;tr.insertCell().textContent=fmt(num)}
+ el('equation').textContent='用 X + Δτ × û 得到 '+fmt(rows[0][1])+'。与记录转换值的绝对差为 '+Math.abs(rows[0][1]-ref).toExponential(2)+'。';
+ el('command').textContent='python3 path_coordinates.py --case '+k+' --step '+n+' --frame '+f+' --row '+row+' --col '+col;
+}
+function films(){
+ const k=value('movieCase');el('strips').replaceChildren();
+ for(const [id,name] of [['ddim','原版 DDIM'],['matched','换算速度，匹配刻度'],['raw','直接拿 v 走，匹配刻度'],['uniform','换算速度，均分直线进度']]){
+  const r=results.rows[id],box=document.createElement('div'),title=document.createElement('strong'),metric=document.createElement('small'),strip=document.createElement('div');
+  box.className='filmrow';strip.className='strip';title.textContent=name;
+  metric.textContent=id==='ddim'?'终点参照':'本段 RMSE '+fmt(r.per_case[k])+'，全体 RMSE '+fmt(r.rmse);
+  for(let f=0;f<frames;f++){
+   const canvas=document.createElement('canvas'),block=6;
+   canvas.setAttribute('aria-label',name+'，帧 '+f);canvas.dataset.click='1';
+   paint(canvas,ends[id],(k*frames+f)*plane,block,el('display').value==='diff'?ends.ddim:null);
+   if(f===value('mf')){const ctx=canvas.getContext('2d');ctx.strokeStyle='#ffac20';ctx.lineWidth=1;ctx.strokeRect(value('mc')*block+.5,value('mr')*block+.5,block-1,block-1)}
+   canvas.onclick=e=>{const box=canvas.getBoundingClientRect();el('mf').value=f;el('mr').value=Math.max(0,Math.min(height-1,Math.floor(height*(e.clientY-box.top)/box.height)));el('mc').value=Math.max(0,Math.min(width-1,Math.floor(width*(e.clientX-box.left)/box.width)));films()};
+   strip.append(canvas);
+  }
+  box.append(title,metric,strip);el('strips').append(box);
+ }
+ const pos=(k*frames+value('mf'))*plane+value('mr')*width+value('mc'),base=ends.ddim[pos];
+ el('spot').textContent='框内原版亮度 '+fmt(base)+'。其余各排减去这格：匹配刻度 '+fmt(ends.matched[pos]-base)+'，原样用 v '+fmt(ends.raw[pos]-base)+'，等距刻度 '+fmt(ends.uniform[pos]-base)+'。';
+}
+el('signal').oninput=pair;el('noise').onchange=pair;el('reset').onclick=()=>{el('signal').value=80;el('noise').value=-1;pair()};
+for(const b of document.querySelectorAll('[data-view]'))b.onclick=()=>{for(const k of document.querySelectorAll('[data-view]'))k.setAttribute('aria-pressed',k===b);el('geometry').querySelector('svg').setAttribute('viewBox',b.dataset.view)};
+for(const id of ['case','stepNo','frame','row','col'])el(id).onchange=pixel;
+el('zoom').onclick=e=>{const b=el('zoom').getBoundingClientRect();el('row').value=Math.max(0,Math.min(height-1,Math.floor(height*(e.clientY-b.top)/b.height)));el('col').value=Math.max(0,Math.min(width-1,Math.floor(width*(e.clientX-b.left)/b.width)));pixel()};
+for(const id of ['movieCase','display','mf','mr','mc'])el(id).onchange=films;pair();pixel();films();
+</script></body></html>

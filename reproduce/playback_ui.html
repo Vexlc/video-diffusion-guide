@@ -1,0 +1,117 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>倒放成片，还是重新生成？</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eff3ed;color:#193540;font:17px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:920px;margin:auto;padding:clamp(12px,4vw,38px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.36;margin:.5em 0 .24em}h1{font-size:clamp(30px,5vw,46px)}h2{font-size:clamp(22px,3vw,28px)}p{margin:6px 0}a,summary{color:#00665b}nav,.tools{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}nav{font-size:15px}section{background:#fff;border-top:3px solid #00695f;margin:18px 0;padding:clamp(13px,3vw,23px)}.tools{background:#edf4ee;padding:10px 12px;margin:12px 0}.tools label{display:inline-flex;align-items:center;gap:7px}input,select,button{font:inherit;accent-color:#00665b}input[type=range]{width:min(130px,35vw)}button,select{padding:2px 7px;background:white;color:inherit;border:1px solid #7f9991;border-radius:4px}button,summary{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid #b04d28;outline-offset:2px}article{border-top:1px solid #cbd9d1;padding:9px 0 6px}h3{font-size:17px;line-height:1.45;margin:2px 0 4px}.frames{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(3px,1vw,9px);max-width:650px}.frames figure{margin:0;text-align:center}.frames canvas{width:100%;height:auto;display:block;image-rendering:pixelated}.frames figure.selected canvas{outline:3px solid #ba5825;outline-offset:-3px}.frames figcaption,.muted{color:#465e63;font-size:14px}.measure{font-size:15px;font-variant-numeric:tabular-nums}.readout{background:#edf4ee;border-left:3px solid #00675c;padding:8px 12px}.zooms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:640px}.zooms figure{margin:0}.zooms canvas{width:100%;height:auto;display:block;image-rendering:pixelated;cursor:crosshair}.zooms figcaption{font-size:14px}details{background:#fffaf0;padding:10px 12px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}@media(max-width:480px){.tools{gap:8px 12px}.frames figcaption{font-size:12px}.zooms{gap:5px}section{padding:12px}.measure{line-height:1.55}.zooms figcaption{font-size:13px}}
+</style>
+<main>__LINKS__<h1>倒放成片，还是重新生成？</h1>
+<p>想让方块向左走，可以倒放一段向右片，也可以把“向左”交给生成器。先猜一猜，两种做法的第一帧会从同一列出发吗？</p>
+<section id="films"><h2>沿四排胶片读两种速度</h2>
+<p>第一排从 (7,3) 向右生成。第二排逐字节沿用第一排的画面，只交换播放顺序。第三排保留起点、把生成指令改为向左。第四排沿用向左指令，把提示点挪到原路线的终点 (12,3)。三次生成使用相同权重和同一份起始噪声，各走 24 步。</p>
+<div class="tools"><label>噪声种子 <select id="seed"></select></label><label>播放帧率 <select id="fps"><option>3</option><option selected>6</option><option>12</option></select> 帧/秒</label>
+<label>播放格 <input id="frame" type="range" min="0" max="5" value="1"><output for="frame" id="counter"></output></label><button id="animate">从头播放</button></div>
+<div id="strips"></div>
+<p class="muted">橙框跟着播放格走。每格下面是最亮 3 × 3 窗口中心的实测列号。点击“从头播放”会按当前帧率播放一遍；本页回放的是 CPU 小模型的记录。</p>
+<details><summary>查看生成这格潜码时做的加法</summary><div class="tools"><label>已走生成步数 <input id="step" type="range" min="0" max="23" value="12"><output id="at-step" for="step"></output></label></div><p>每次取归一化生成进度的 1/24，做 x下一步 = x当前 + u/24。这里始终读块 8 的分量 1，u 的单位是“潜码单位／单位生成进度”。</p><div id="formulas"></div></details>
+</section>
+<section id="difference"><h2>轨迹重合，哪些像素还有差异？</h2><p>左图取倒放片，中图取移动起点后重新生成的向左片。两张图按相同播放格、相同屏幕位置对齐。右图把亮度不同的位置涂成橙色，只要相差 1 就会着色。</p>
+<div class="zooms"><figure><canvas id="reversed" width="160" height="120"></canvas><figcaption>倒放原片</figcaption></figure><figure><canvas id="rerun" width="160" height="120"></canvas><figcaption>重新生成</figcaption></figure><figure><canvas id="difference-map" width="160" height="120"></canvas><figcaption>亮度不同处</figcaption></figure></div>
+<div class="tools"><label>屏幕列 <select id="col"></select></label><label>行 <select id="row"></select></label><button id="peak">定位本帧最大差异</button><label>播放格 <select id="inspect-frame"></select></label></div>
+<p id="pixel" class="readout"></p><p id="scores"></p><p class="muted">蓝框标出读数位置。可以点图选位置，也可以用列和行选框。亮度采用 8 位显示值，范围是 0 到 255。</p></section>
+<details><summary>在本地用 Python 重算</summary><p>进入离线包的 reproduce 目录。第一条命令用 Python 标准库复算书中成绩，第二条用 PyTorch 和随包权重重新生成三段片及本页。把 9317 换成其他整数即可测试新噪声。</p><pre>python3 playback_report.py --seed 9317 --frame 1 --step 12 --fps 6
+python3 playback_lab.py --seed 9317 --out replay/playback</pre></details></main>
+<script type="application/json" id="record">__RECORD__</script>
+<script>
+const record=JSON.parse(document.getElementById('record').textContent);
+const el=id=>document.getElementById(id), value=id=>Number(el(id).value);
+const configurations=[['right',false,'向右生成'],['right',true,'倒放第一排'],['left',false,'改为向左'],['left_end',false,'再移动起点']];
+const fmt=x=>x.toFixed(4).replace('-','−'), signed=x=>(x>0?'+':'')+String(x).replace('-','−');
+for(const seed of Object.keys(record.seeds))el('seed').add(new Option(seed,seed));
+for(const [id,count] of [['col',16],['row',12],['inspect-frame',6]]){
+ for(let i=0;i<count;i++)el(id).add(new Option(i,i));
+}
+let runs=[], difference=[], timer=null;
+function gray(canvas,plane){
+ const ctx=canvas.getContext('2d'), image=ctx.createImageData(16,12);
+ plane.forEach((v,i)=>image.data.set([v,v,v,255],i*4));ctx.putImageData(image,0,0);
+}
+const panels=configurations.map(([key,reverse,title])=>{
+ const article=document.createElement('article'),heading=document.createElement('h3'),strip=document.createElement('div'),readout=document.createElement('p');
+ heading.textContent=title;strip.className='frames';readout.className='measure';article.append(heading,strip,readout);el('strips').append(article);
+ const cells=Array.from({length:6},()=>{
+   const figure=document.createElement('figure'),picture=document.createElement('canvas'),caption=document.createElement('figcaption');
+   picture.width=16;picture.height=12;figure.append(picture,caption);strip.append(figure);
+   return {figure,picture,caption};
+ });
+ return {cells,readout};
+});
+function load(){
+ const group=record.seeds[el('seed').value];
+ runs=configurations.map(([name,reverse],i)=>{
+   const run=group[name],bytes=Uint8Array.from(atob(run.film),c=>c.charCodeAt(0));
+   const order=Array.from({length:6},(_,f)=>reverse?5-f:f);
+   const frames=order.map(f=>bytes.subarray(f*192,(f+1)*192));
+   const centers=order.map(f=>run.centers[f]);
+   panels[i].cells.forEach(({picture,caption},j)=>{gray(picture,frames[j]);caption.textContent='列 '+centers[j][0];picture.setAttribute('aria-label','播放格 '+j+'，源帧 '+order[j]+'，中心 '+centers[j].join(', '))});
+   return {run,frames,centers,order};
+ });
+ difference=runs[1].frames.map((a,j)=>Uint8Array.from(a,(p,i)=>Math.abs(p-runs[3].frames[j][i])));
+ pickPeak();refresh();
+}
+function pickPeak(){
+ const delta=difference[value('frame')],loc=delta.indexOf(Math.max(...delta));
+ el('col').value=loc%16;el('row').value=Math.floor(loc/16);
+}
+function zoom(){
+ const f=value('frame'),col=value('col'),row=value('row'),idx=row*16+col;
+ const a=runs[1].frames[f],b=runs[3].frames[f],delta=difference[f];
+ for(const [id,plane] of [['reversed',a],['rerun',b],['difference-map',delta]]){
+   const ctx=el(id).getContext('2d');
+   plane.forEach((v,i)=>{
+     ctx.fillStyle=id==='difference-map'?(v?'#ad492c':'#e0e8e3'):'rgb('+[v,v,v].join(',')+')';
+     ctx.fillRect(i%16*10,Math.floor(i/16)*10,10,10);
+   });
+   ctx.strokeStyle='#1897d0';ctx.lineWidth=2;ctx.strokeRect(col*10+1,row*10+1,8,8);
+   el(id).setAttribute('aria-label','播放格 '+f+'，标出 ('+col+', '+row+')');
+ }
+ el('pixel').textContent='播放格 '+f+'，坐标 ('+col+', '+row+')。倒放片亮度 '+a[idx]+'，重新生成亮度 '+b[idx]+'，绝对差 '+delta[idx]+'。';
+ const counts=difference.map(d=>d.reduce((n,v)=>n+Number(v!==0),0));
+ const hits=runs[1].centers.filter((c,i)=>c.every((v,k)=>v===runs[3].centers[i][k])).length;
+ el('scores').textContent='本格有 '+counts[f]+' / 192 个像素不同。整段有 '+counts.reduce((a,b)=>a+b,0)+' / 1152 个像素不同，'+hits+' / 6 个中心重合。';
+}
+function refresh(){
+ const f=value('frame'),n=value('step'),fps=value('fps');
+ el('inspect-frame').value=f;el('counter').textContent=f+' / 5';el('at-step').textContent=n;
+ el('formulas').replaceChildren();
+ runs.forEach(({run,order,centers},i)=>{
+   panels[i].cells.forEach(({figure},j)=>figure.classList.toggle('selected',f===j));
+   const movement=f===5?'片尾，从这一格起没有下一个帧间隔。':'到下一格的水平速度 ('+centers[f+1][0]+' − '+centers[f][0]+') × '+fps+' = '+signed((centers[f+1][0]-centers[f][0])*fps)+' 格/秒。';
+   panels[i].readout.textContent='播放格 '+f+' 取源帧 '+order[f]+'。'+movement+' 第 '+n+' 步的潜码速度 '+fmt(run.u[n])+'。';
+   const p=document.createElement('p');p.textContent=configurations[i][2]+'　'+fmt(run.x[n])+' + ('+fmt(run.u[n])+') / 24 ≈ '+fmt(run.x[n+1])+'。';
+   el('formulas').append(p);
+ });
+ zoom();
+}
+function stop(){clearTimeout(timer);timer=null;el('animate').textContent='从头播放'}
+function tick(){
+ const f=value('frame');
+ if(f===5){stop();return}
+ el('frame').value=f+1;refresh();timer=setTimeout(tick,1000/value('fps'));
+}
+el('animate').onclick=()=>{
+ if(timer!==null){stop();return}
+ el('frame').value=0;refresh();el('animate').textContent='停止';timer=setTimeout(tick,1000/value('fps'));
+};
+el('frame').oninput=()=>{stop();refresh()};el('step').oninput=refresh;
+el('fps').onchange=()=>{stop();refresh()};el('seed').onchange=()=>{stop();load()};
+el('inspect-frame').onchange=()=>{stop();el('frame').value=value('inspect-frame');refresh()};
+for(const id of ['col','row'])el(id).onchange=zoom;
+el('peak').onclick=()=>{pickPeak();zoom()};
+for(const id of ['reversed','rerun','difference-map'])el(id).onclick=e=>{
+ stop();const bounds=el(id).getBoundingClientRect();
+ el('col').value=Math.min(15,Math.max(0,Math.floor((e.clientX-bounds.left)*16/bounds.width)));
+ el('row').value=Math.min(11,Math.max(0,Math.floor((e.clientY-bounds.top)*12/bounds.height)));
+ zoom();
+};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stop()});
+load();
+</script></html>

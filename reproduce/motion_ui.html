@@ -1,0 +1,113 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>横着播影片，竖着看生成 · 实验 P</title><style>
+*{box-sizing:border-box}body{margin:0;color:#193540;background:#edf2ed;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:940px;margin:auto;padding:clamp(12px,3vw,32px)}header,section{background:#fffdf8;border:1px solid #c9d7ce;padding:clamp(16px,3vw,28px);margin-bottom:16px;border-radius:8px}header{border-top:5px solid #00695f}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.4;margin:6px 0 12px}h1{font-size:clamp(26px,5vw,40px)}h2{font-size:clamp(21px,3vw,29px)}h3{font-size:17px;margin:12px 0 3px}p{margin:6px 0}a,summary{color:#00695f}nav,.controls{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:12px 0}.controls label{display:inline-flex;gap:6px;align-items:center}button,select,input{font:inherit;accent-color:#00695f}select,button{color:inherit;border:1px solid #8ba59c;background:white;border-radius:4px;padding:3px 7px}button,summary{cursor:pointer}:focus-visible{outline:3px solid #a74d24;outline-offset:2px}.eyebrow,.note{color:#516469;font-size:14px}.metric{background:#e9f2eb;border-left:4px solid #00695f;padding:9px 13px;margin:8px 0;font-variant-numeric:tabular-nums}.metric.play{background:#f6ede0;border-color:#af542f}.lenses{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid{border-collapse:collapse;font-variant-numeric:tabular-nums}.grid th,.grid td{padding:6px 13px;border-bottom:1px solid #d6e0da;text-align:center}.grid th{color:#425e61;font-weight:600}.grid canvas,.pair canvas,.strip canvas{width:clamp(76px,13vw,122px);display:block;image-rendering:pixelated;margin:auto}.grid small{display:block;font-weight:bold}.pair,.strip{display:flex;align-items:center;flex-wrap:wrap;gap:10px 24px}.pair figure,.strip figure{margin:5px 0;text-align:center}figcaption{font-size:14px}.searchrow{display:flex;gap:18px 38px;align-items:center;flex-wrap:wrap}.costs{border-collapse:separate;border-spacing:3px;font-size:14px}.costs th{color:#526867;font-weight:500}.costs button{min-width:43px;width:100%;font-size:clamp(12px,2.6vw,14px);padding:5px 2px;line-height:1.4;font-variant-numeric:tabular-nums}.costs .win{background:#00695f;color:white}.costs [aria-pressed=true]{outline:2px solid #a74821;outline-offset:0}.costs td{padding:0}.pieces{border-collapse:collapse;font-size:14px}.pieces td{background:#f1f4ee;border:2px solid white;padding:4px 9px;text-align:center}.pieces .changed{background:#f7e3d2}.pieces small{display:block;color:#42585b}.pieces caption{text-align:left;font-weight:bold}.panel{max-width:410px}code{overflow-wrap:anywhere}
+@media(max-width:580px){.lenses{grid-template-columns:1fr}.grid th,.grid td{padding:5px 8px}.controls{gap:8px 11px}.costs button{min-width:36px}.lenses .metric{margin:2px 0}}
+</style><main><header><div class="eyebrow">实验 P　·　PDF 68–69 页</div><h1>横着播影片，竖着看生成</h1><p>同一段六帧小片可以有两种速度。沿着帧号走，量方块在屏幕上移了几格；沿着生成进度走，量模型在潜码里改了多少。</p><nav><a href="#times">两只钟</a><a href="#match">在下一帧找同一块</a><a href="index.html">回到点图与方向实验</a></nav></header>
+<section id="times"><h2>沿哪条轴量变化？</h2><p>固定噪声种子 9317、首帧点 (7,3) 和支路强度 1。先钉住一个像素，横着比较相邻两帧，再竖着比较连续两次生成状态。</p>
+<div class="controls"><label>方向 <select id="direction"><option value="right">向右</option><option value="left">向左</option></select></label><label>已更新 n <select id="step"></select></label><label>影片起始帧 f <select id="frame"></select></label><label>读数点列 <select id="col"></select></label><label>行 <select id="row"></select></label><button id="reset">还原书中例题</button></div>
+<table class="grid"><thead><tr><th scope="col">生成状态</th><th id="fa" scope="col">帧 2</th><th id="fb" scope="col">帧 3</th></tr></thead><tbody id="frames"></tbody></table><p class="note">橙框为同一屏幕位置，框下数字为该像素的 8 位显示灰度。</p>
+<div class="controls"><label>第 8 号块的分量 <select id="component"></select></label><label>播放帧率 <select id="fps"><option>3</option><option selected>6</option><option>12</option></select> 帧/秒</label></div>
+<div class="lenses"><div class="metric"><b>生成进度前进一步</b><p id="latent"></p></div><div class="metric play"><b>成片播放一帧</b><p id="displacement"></p></div></div>
+<details id="player"><summary>按选定帧率播放完整六帧</summary><div class="strip"><figure><canvas id="screen" aria-label="已完成的六帧影片"></canvas><figcaption id="caption"></figcaption></figure><button id="play">播放</button></div></details></section>
+<section id="match"><h2>哪个位移能把两帧的局部图案对齐？</h2><p>使用上面的方向与影片起始帧。先在理想方块中心取一个白像素，看多少种平移能找到同样的白。再把窗口扩大到三格或九格。</p>
+<div class="controls"><label>影片来源 <select id="source"><option value="ideal">理想方块</option><option value="decoded">解码成片</option></select></label><label>取样位置 <select id="anchor"><option value="center">指定路线的中心</option><option value="background">背景 (5,8)</option></select></label><label>比较窗口 <select id="window"><option value="point">一个像素</option><option value="strip">横排三格</option><option value="square">整块九格</option></select></label></div>
+<div class="searchrow"><div><div class="pair"><figure><canvas id="sourcePic" aria-label="源窗口"></canvas><figcaption id="sourceLabel"></figcaption></figure><figure><canvas id="targetPic" aria-label="候选窗口"></canvas><figcaption id="targetLabel"></figcaption></figure></div><p class="note">橙框标出被比较的两块。点击代价表中的数字可更换候选。</p></div><div>
+<table class="costs"><caption>逐格亮度差的绝对值之和</caption><thead><tr><th scope="col">↓行／列→</th><th>−2</th><th>−1</th><th>0</th><th>1</th><th>2</th></tr></thead><tbody id="costs"></tbody></table></div></div>
+<div class="metric" id="answer"></div><p id="comparison"></p><details><summary>展开这一个候选，逐格检查代价</summary><table class="pieces"><caption>源亮度 → 目标亮度</caption><tbody id="pieces"></tbody></table><p id="addition"></p></details><p class="note">深绿色为全部最低代价，橙框为选中的候选。坐标写作（Δ列，Δ行），向右、向下为正。理想图由已知路线逐格绘制。解码图来自真实模型并已量化成 8 位灰度。</p>
+<details><summary>用 Python 核对</summary><p>在解压包的 <code>reproduce</code> 目录运行 <code>python3 motion_readout.py ../flow-hint --frame 2 --window square --source decoded</code>。第一段输出两只钟的读数，第二段列出完整代价表与全部并列最优位移，只需标准库。</p></details></section></main>
+<script type="application/json" id="records">__ROUTES__</script><script>
+'use strict';
+const el=id=>document.getElementById(id), routes=JSON.parse(el('records').textContent);
+for(const r of Object.values(routes))r.bytes=Uint8Array.from(atob(r.pixels),c=>c.charCodeAt(0));
+const value=id=>Number(el(id).value),route=()=>routes[el('direction').value];
+for(const [id,count,selected] of [['step',24,12],['frame',5,2],['col',16,9],['row',12,3],['component',4,1]]){
+ for(let i=0;i<count;i++)el(id).add(new Option(i,i));el(id).value=selected;
+}
+function imageAt(r,n,f){const start=(n*6+f)*192;return r.bytes.subarray(start,start+192)}
+function ideal(center){return Uint8Array.from({length:192},(_,i)=>Math.abs(i%16-center[0])<=1&&Math.abs(Math.floor(i/16)-center[1])<=1?255:0)}
+function draw(cv,plane,box){
+ cv.width=160;cv.height=120;const ctx=cv.getContext('2d');
+ for(let i=0;i<192;i++){ctx.fillStyle='rgb('+[plane[i],plane[i],plane[i]].join(',')+')';ctx.fillRect(i%16*10,Math.floor(i/16)*10,10,10)}
+ if(box){const [x,y,rx,ry]=box;ctx.strokeStyle='#ffae50';ctx.lineWidth=2;ctx.strokeRect((x-rx)*10+1,(y-ry)*10+1,10*(2*rx+1)-2,10*(2*ry+1)-2)}
+}
+const fmt=v=>v.toFixed(4).replace('-','−'), vector=v=>'('+v.join(', ')+')';
+let shown=2,timer=null,dx=1,dy=0;
+function show(){draw(el('screen'),imageAt(route(),24,shown));el('caption').textContent='成片 · 帧 '+shown}
+function stop(){clearInterval(timer);timer=null;el('play').textContent='播放'}
+function start(){stop();el('play').textContent='暂停';timer=setInterval(()=>{shown=(shown+1)%6;show()},1000/value('fps'))}
+el('play').onclick=()=>timer===null?start():stop();
+el('player').ontoggle=()=>{if(!el('player').open)stop()};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stop()});
+function times(){
+ const r=route(),n=value('step'),f=value('frame'),col=value('col'),row=value('row'),k=value('component'),fps=value('fps');
+ el('fa').textContent='帧 '+f;el('fb').textContent='帧 '+(f+1);el('frames').replaceChildren();
+ for(const [i,g] of [n,n+1,24].entries()){
+  const tr=document.createElement('tr'),th=document.createElement('th');th.scope='row';th.textContent=i===2?'成片 · 24 步':g+' 步';tr.append(th);
+  for(const j of [f,f+1]){
+   const px=imageAt(r,g,j),td=document.createElement('td'),cv=document.createElement('canvas'),small=document.createElement('small');
+   draw(cv,px,[col,row,0,0]);small.textContent=px[row*16+col];td.append(cv,small);tr.append(td);
+  }
+  el('frames').append(tr);
+ }
+ const a=r.centers[f],b=r.centers[f+1],delta=b.map((v,i)=>v-a[i]),u=r.u[n][k];
+ el('latent').textContent='u = '+fmt(u)+'，每单位生成进度的潜码变化。第 '+(n+1)+' 次更新：'+fmt(r.x[n][k])+' + ('+fmt(u)+') / 24 ≈ '+fmt(r.x[n+1][k])+'。';
+ el('displacement').textContent='中心 '+vector(a)+' → '+vector(b)+'。位移 '+vector(delta)+' 格/帧 × '+fps+' 帧/秒 = '+vector(delta.map(v=>v*fps))+' 格/秒。';
+ show();
+}
+const windows={point:[0,0],strip:[1,0],square:[1,1]};
+function match(){
+ const r=route(),f=value('frame'),source=el('source').value,[rx,ry]=windows[el('window').value];
+ const [x,y]=el('anchor').value==='center'?r.target[f]:[5,8];
+ const [a,b]=[f,f+1].map(j=>source==='ideal'?ideal(r.target[j]):imageAt(r,24,j));
+ const fits=(i,j)=>i>=rx&&i<16-rx&&j>=ry&&j<12-ry;
+ const cells=[];
+ for(let j=-2;j<=2;j++)for(let i=-2;i<=2;i++){
+  let sum=null;
+  if(fits(x+i,y+j)){
+   sum=0;
+   for(let v=-ry;v<=ry;v++)for(let h=-rx;h<=rx;h++)sum+=Math.abs(a[(y+v)*16+x+h]-b[(y+j+v)*16+x+i+h]);
+  }
+  cells.push({i,j,sum});
+ }
+ const valid=cells.filter(c=>c.sum!==null),lowest=Math.min(...valid.map(c=>c.sum)),best=valid.filter(c=>c.sum===lowest);
+ let current=valid.find(c=>c.i===dx&&c.j===dy);
+ if(!current){current=best[0];dx=current.i;dy=current.j}
+ el('costs').replaceChildren();
+ for(let j=-2;j<=2;j++){
+  const tr=document.createElement('tr'),th=document.createElement('th');th.scope='row';th.textContent=j;tr.append(th);
+  for(const c of cells.filter(c=>c.j===j)){
+   const td=document.createElement('td'),btn=document.createElement('button');
+   btn.disabled=c.sum===null;btn.textContent=c.sum===null?'—':c.sum;btn.className=c.sum===lowest?'win':'';
+   btn.setAttribute('aria-pressed',String(c===current));btn.setAttribute('aria-label','位移 '+vector([c.i,c.j])+'，代价 '+btn.textContent);
+   btn.onclick=()=>{dx=c.i;dy=c.j;match();el('costs').querySelector('[aria-pressed=true]').focus({preventScroll:true})};td.append(btn);tr.append(td);
+  }
+  el('costs').append(tr);
+ }
+ draw(el('sourcePic'),a,[x,y,rx,ry]);draw(el('targetPic'),b,[x+dx,y+dy,rx,ry]);
+ el('sourceLabel').textContent='帧 '+f+' · '+vector([x,y]);el('targetLabel').textContent='帧 '+(f+1)+' · '+vector([x+dx,y+dy]);
+ el('answer').textContent='最低代价 '+lowest+'，共有 '+best.length+' 个并列候选。'+(best.length===1?'唯一最优位移 '+vector([best[0].i,best[0].j])+'。':'所有深绿色格子都取得这个值。');
+ const terms=[];el('pieces').replaceChildren();
+ for(let h=-ry;h<=ry;h++){
+  const tr=document.createElement('tr');
+  for(let w=-rx;w<=rx;w++){
+   const src=a[(y+h)*16+x+w],dst=b[(y+dy+h)*16+x+dx+w],diff=Math.abs(src-dst);
+   const td=document.createElement('td'),small=document.createElement('small');
+   td.textContent=src+' → '+dst;small.textContent='相差 '+diff;td.className=diff?'changed':'';
+   td.append(small);tr.append(td);terms.push(diff);
+  }
+  el('pieces').append(tr);
+ }
+ el('addition').textContent='绝对差相加：'+terms.join(' + ')+' = '+current.sum+'。';
+ el('comparison').textContent='选中位移 '+vector([dx,dy])+' 的代价为 '+current.sum+'。'+(current.sum===lowest?'它属于最低代价组。':'它比最低代价多 '+(current.sum-lowest)+'。');
+}
+function reset(){
+ stop();Object.entries({direction:'right',step:12,frame:2,col:9,row:3,component:1,fps:6,source:'ideal',anchor:'center',window:'point'}).forEach(([id,v])=>el(id).value=v);
+ dx=1;dy=0;shown=2;times();match();
+}
+el('reset').onclick=reset;
+for(const id of ['frame','direction'])el(id).onchange=()=>{shown=value('frame');times();match()};
+for(const id of ['step','row','col','component'])el(id).onchange=times;
+el('fps').onchange=()=>{times();if(timer!==null)start()};
+for(const id of ['source','anchor','window'])el(id).onchange=match;
+reset();
+</script></html>

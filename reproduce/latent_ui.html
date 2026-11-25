@@ -1,0 +1,71 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>打开视频的潜变量 · 实验 L</title><style>
+*{box-sizing:border-box}body{margin:0;color:#193540;background:#f3f4ed;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:960px;margin:auto;padding:clamp(15px,4vw,40px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.3}h1{font-size:clamp(32px,6vw,52px);margin:5px 0}h2{font-size:clamp(23px,4vw,29px);margin:0 0 7px}p{margin:6px 0 12px}.k{color:#00695f;font-weight:700}section{background:white;border:1px solid #cddbd0;border-radius:8px;margin:18px 0;padding:clamp(13px,3vw,25px)}.controls{display:flex;gap:10px 18px;align-items:center;flex-wrap:wrap;margin:12px 0}label,.tag{font-weight:650;font-size:15px}button,select{padding:5px 9px;color:inherit;font:inherit;background:#fff;border:1px solid #94aaa1;border-radius:5px}button{cursor:pointer}input{accent-color:#00695f;vertical-align:middle;max-width:100%}.grid{display:grid;grid-template-columns:repeat(4,minmax(43px,67px));gap:4px}.grid button{font:600 14px/1.5 monospace;padding:8px 2px;color:#163239;text-shadow:0 0 3px white;background-color:#edf2e8}.grid button[aria-pressed=true]{outline:3px solid #9d440e;outline-offset:1px}.two{display:flex;flex-wrap:wrap;gap:14px 25px;align-items:center}.controls output{display:inline-block;min-width:3em;font-variant-numeric:tabular-nums}.film{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}.film img{width:100%;display:block;image-rendering:pixelated}.film .active{outline:2px solid #e59444;outline-offset:-2px}.tag{display:block;margin:9px 0 3px}.score{padding:8px 12px;border-left:4px solid #00695f;background:#eaf3ed;margin:12px 0}.note{font-size:14px;color:#496168}.calc{font-variant-numeric:tabular-nums}canvas{image-rendering:pixelated}
+</style></head><body><main><div class="k">从雪花到运动　/　实验 L</div><h1>打开视频的潜变量</h1><p>这台小网络把六帧压成三组数，再把三组数变回六帧。你可以直接改其中一格，让浏览器用随包权重重新解码。</p>
+<section><h2>改一个数，哪几帧会动？</h2><p>先选一个格子，把改变量从 0 拉到 +2。看橙框里的变化，再换一组观察橙框移到哪两帧。解码器一次读取相邻两帧对应的整组潜变量。</p>
+<div class="controls"><label>留出样片 <select id="pick"></select></label><label>帧组 <select id="group"><option>0、1 帧</option><option selected>2、3 帧</option><option>4、5 帧</option></select></label><label>通道 <select id="channel"><option>0</option><option>1</option></select></label></div>
+<div class="two"><div id="grid" class="grid" aria-label="选择三行四列潜变量中的一格"></div><div><label>改变量 <output id="deltaOut"></output><br><input id="delta" type="range" min="-3" max="3" step=".25" value="0"></label> <button id="reset">归零</button><p class="note" id="cell"></p></div></div>
+<div class="tag">原片</div><div class="film" id="truth"></div><div class="tag">均值码重建</div><div class="film" id="before"></div><div class="tag">修改后重新解码</div><div class="film" id="after"></div>
+<div class="tag">与均值重建的绝对差</div><div class="film" id="diff"></div><small>黑色表示不变；从纯黑变到纯白的亮度差显示为白色。色阶始终固定。</small>
+<p id="change" class="score" aria-live="polite"></p><p id="calculation" class="calc"></p>
+</section>
+<section><h2>同一段原片，取均值还是抽样？</h2><p>沿用上方所选样片。在相同权重下比较两次随机抽样，再切换正则强度。统计来自全部 28 条留出路线。</p><div class="controls"><label>训练时 KL 权重 <select id="weight"><option value="light">0.01 · 轻</option><option value="strong">0.20 · 强</option></select></label></div><div id="post"></div><p class="score" id="postStats"></p></section>
+<section><h2>没有原片，从同一份雪花出发</h2><p>此处另取八个生成起点。固定一个起点与帧号，再切换生成方式，看同一解码器画出的方块位置怎样变化。</p>
+<div class="controls"><label>噪声起点 <select id="start"></select></label><label>生成方式 <select id="mode"><option value="prior">直接解码标准先验</option><option value="start">直接解码 FM 起点</option><option value="flow1">流匹配 · 1 步</option><option value="flow4">流匹配 · 4 步</option><option value="flow24" selected>流匹配 · 24 步</option></select></label><label>帧 <output id="frameOut"></output><input id="frame" type="range" min="0" max="5" value="0"></label></div>
+<div id="generated" class="film"></div><div class="two"><canvas id="zoom" width="16" height="12" style="width:min(210px,60vw)" aria-label="当前生成帧放大图"></canvas><p id="genStats" class="score"></p></div></section>
+</main><script>
+const data=__LATENT_DATA__, el=id=>document.getElementById(id), fmt=x=>x.toFixed(4);
+__PAIR_DECODER__
+const layers=decoderLayers(data.decoder);
+function decodePair(group){return decodeLatentPair(group.flat(2),layers)}
+function pixels(values,offset){
+  const c=document.createElement("canvas");c.width=16;c.height=12;
+  const ctx=c.getContext("2d"),im=ctx.createImageData(16,12);
+  for(let i=0;i<192;i++){const gray=Math.round(127.5*(values[offset+i]+1));im.data.set([gray,gray,gray,255],4*i)}ctx.putImageData(im,0,0);return c.toDataURL();
+}
+function film(node,frames,active=[]){
+  node.replaceChildren();frames.forEach((src,i)=>{const img=new Image();img.src=src;img.alt="第 "+i+" 帧";if(active.includes(i))img.className="active";node.append(img)});
+}
+const blank=pixels(new Float64Array(192).fill(-1),0);
+for(let i=0;i<8;i++){el("pick").add(new Option("样片 "+(i+1),i));el("start").add(new Option("起点 "+(i+1),i))}
+let cell=5;
+function edit(){
+  const sample=+el("pick").value,g=el("group").selectedIndex,c=el("channel").selectedIndex;
+  const r=Math.floor(cell/4),col=cell%4,delta=+el("delta").value,original=data.latent[sample][g];
+  const modified=original.map(ch=>ch.map(row=>row.slice()));modified[c][r][col]+=delta;
+  const baseline=decodePair(original),changed=delta===0?baseline:decodePair(modified);
+  const centers=data.frames.light_mean[sample],images=centers.slice(),active=[2*g,2*g+1];
+  images[2*g]=pixels(changed,0);images[2*g+1]=pixels(changed,192);
+  film(el("truth"),data.frames.truth[sample]);film(el("before"),centers,active);film(el("after"),images,active);
+  let peak=0,total=0;const difference=Float64Array.from(changed,(v,i)=>Math.abs(v-baseline[i])-1);
+  changed.forEach((v,i)=>{const d=Math.abs(v-baseline[i]);peak=Math.max(peak,d);total+=d});
+  const diffFrames=Array(6).fill(blank);diffFrames[2*g]=pixels(difference,0);diffFrames[2*g+1]=pixels(difference,192);film(el("diff"),diffFrames,active);
+  el("change").textContent="所选两帧平均绝对变化 "+fmt(total/384)+"，最大 "+fmt(peak)+"。其余四帧沿用各自原码，变化为 0。";
+  const mu=original[c][r][col],sigma=data.first_sigma[sample][g][c][r][col],eta=data.first_eps[sample][g][c][r][col];
+  el("cell").textContent="第 "+r+" 行、第 "+col+" 列（从 0 数）";el("deltaOut").textContent=(delta>=0?"+":"")+delta.toFixed(2);
+  el("calculation").textContent="同一格还有标准差 "+fmt(sigma)+"。第一次后验抽样在这格取 η = "+fmt(eta)+"，所以 z = "+fmt(mu)+" + "+fmt(sigma)+" × ("+fmt(eta)+") ≈ "+fmt(mu+sigma*eta)+"。上面的手动编辑使用均值加改变量。";
+  el("grid").querySelectorAll("button").forEach((b,i)=>{
+    const v=original[c][Math.floor(i/4)][i%4];const strength=Math.min(1,Math.abs(v)/data.limit)*.72;
+    const color=v<0?[173,73,44]:[0,105,95];b.style.backgroundColor="rgb("+color.map((n,j)=>Math.round([246,246,235][j]*(1-strength)+n*strength)).join(",")+")";
+    b.textContent=v.toFixed(2);b.setAttribute("aria-pressed",String(i===cell));b.title="选择行 "+Math.floor(i/4)+" 列 "+i%4;
+  });
+}
+for(let i=0;i<12;i++){const b=document.createElement("button");b.onclick=()=>{cell=i;edit()};el("grid").append(b)}
+function post(){
+  const pick=+el("pick").value,key=el("weight").value,s=data.stats[key];
+  el("post").replaceChildren();for(const [suffix,caption] of [["mean","均值码"],["draw","第一次后验抽样"],["again","第二次后验抽样"]]){
+    const title=document.createElement("div"),strip=document.createElement("div");title.className="tag";title.textContent=caption;strip.className="film";
+    film(strip,data.frames[key+"_"+suffix][pick]);el("post").append(title,strip);
+  }
+  el("postStats").textContent="六帧中心全中原题　·　均值 "+s.mean.exact+" / "+data.hold_count+"　·　第一次抽样 "+s.draw.exact+" / "+data.hold_count+"　·　每格平均 KL "+fmt(s.kl);
+}
+let drawing=0;
+function generation(){
+  const key=el("mode").value,sample=+el("start").value,f=+el("frame").value,frames=data.frames[key][sample],s=data.stats.generation[key];
+  film(el("generated"),frames,[f]);el("frameOut").textContent=f;const img=new Image(),version=++drawing;
+  img.onload=()=>{if(version===drawing)el("zoom").getContext("2d").drawImage(img,0,0)};img.src=frames[f];
+  el("genStats").textContent="256 段生成片里有 "+s.route_hits+" 段的六帧中心全中，覆盖 "+s.distinct_exact+" 条不同路线。其中 "+s.held_exact+" 段命中留出路线。到最近模板的整片像素 MSE 为 "+fmt(s.clip_mse)+"。";
+}
+el("pick").onchange=()=>{edit();post()};el("channel").onchange=edit;el("group").onchange=edit;el("delta").oninput=edit;
+el("reset").onclick=()=>{el("delta").value=0;edit()};el("weight").onchange=post;el("start").onchange=generation;el("mode").onchange=generation;el("frame").oninput=generation;
+edit();post();generation();
+</script></body></html>

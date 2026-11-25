@@ -1,0 +1,99 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>跟一张训练题过路口 · Flow Matching</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f1f4ef;color:#17393b;font:17px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:985px;margin:auto;padding:clamp(14px,4vw,42px)}header p{max-width:730px}h1,h2{font:700 clamp(28px,5vw,46px)/1.24 "Noto Serif CJK SC",serif;margin:.35em 0}h2{font-size:clamp(23px,3.5vw,29px)}p{margin:.6em 0}section{margin:22px 0;background:white;border-top:3px solid #076b60;padding:clamp(13px,3vw,23px)}select,input,button{font:inherit;max-width:100%;accent-color:#00685e}select,button{border:1px solid #76928b;background:white;color:inherit;border-radius:4px;padding:4px 8px}button:not(:disabled),select,summary{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #b55a28;outline-offset:2px}.controls{display:flex;gap:8px 16px;align-items:center;flex-wrap:wrap;margin:10px 0}.controls label{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}.rail,.plot{display:block;width:100%;height:auto}.rail{max-width:700px}.panel{margin-top:9px;padding:10px 13px;background:#f0f5ed}.math{padding:9px 12px;background:#e9f3ee;border-left:3px solid #146b60;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.small,small{color:#425f63}.bar{height:13px;display:flex;background:#cfdfdd;margin:1px 0 7px}.bar i{display:block;background:#0c7066}.pair figure{margin:8px 0}.pair figcaption{font-size:15px}.numbers{font-variant-numeric:tabular-nums}.controls input[type=number]{width:7ch}.controls input[type=range]{width:clamp(100px,20vw,165px)}[hidden]{display:none!important}code{overflow-wrap:anywhere}@media(max-width:650px){.pair{grid-template-columns:1fr}.controls{gap:7px 12px}main{padding:13px}.rail{min-height:82px}.rail text{font-size:19px}.panel{padding:9px}.controls output{min-width:3.4ch}}
+</style></head><body><main><header><h1>跟一张训练题过路口</h1><p>先看一张题的起点、终点和速度。然后让附近的题共用一个答案，自己调一调，看平方误差在哪儿最小。最后站在路口数人，检验平均速度能不能解释人群的流动。</p></header>
+<section><h2>先选路口，再翻一张题</h2><div class="controls"><label>前多少道题 <select id="total"></select></label><label>位置 x <input id="x" type="range" min="-3" max="3" step=".025" value=".25"><output id="ox"></output></label><label>生成进度 t <input id="time" type="range" min="0" max="1" step=".025" value=".5"><output id="ot"></output></label></div>
+<div class="controls"><label>窗口半径 <select id="radius"><option>.01</option><option selected>.025</option><option>.1</option><option>.3</option></select></label><label>给预测器的线索 <select id="group"><option value="0">位置、进度</option><option value="-1">额外告知来自左团</option><option value="1">额外告知来自右团</option></select></label><button id="reset">恢复讲义设置</button></div>
+<p id="counts" class="math"></p><div id="card"><div class="controls"><button id="prev">上一题</button><label>入窗序号 <input id="rank" type="number" value="1" min="1"></label><button id="next">下一题</button></div>
+<svg class="rail" id="rail" viewBox="0 0 530 120" role="img" aria-label="起点、中途位置和终点在同一数轴上的位置"></svg><p class="numbers" id="ticket"></p></div></section>
+<section><h2>同一路口，报多大速度合适？</h2><p>每张题各有自己的速度标签。让窗口里的每一题都收到同一预测 g，逐题把误差平方后取平均。</p>
+<div class="controls"><label>你猜的速度 g <input id="guess" type="range" min="-8" max="8" value="0" step=".01"><output id="og"></output></label><button id="average">采用样本平均</button><button id="zero">改猜 0</button></div>
+<div class="pair"><figure><svg class="plot" id="hist" viewBox="0 0 360 160" role="img" aria-label="两团样本的速度标签分布"></svg><figcaption>橙色来自左团，青色来自右团。柱高是题数。两端的格子也收进越界标签。</figcaption></figure><figure><svg class="plot" id="loss" viewBox="0 0 360 160" role="img" aria-label="常数预测与窗口平均平方误差"></svg><figcaption>横轴是所猜速度，纵轴是均方误差。空心圆是当前猜测，青点是样本最低处。</figcaption></figure></div>
+<p class="math" id="score"></p><p id="theory"></p></section>
+<section><h2>把同一个路口当作一扇门</h2><p>门固定在上面的位置 x。用所选题数中的全部路径数人，与窗口半径、给预测器的线索无关。一条直线在这个观察时段最多穿门一次。</p>
+<div class="controls"><label>时间半宽 <select id="span"><option>.005</option><option selected>.025</option><option>.1</option></select></label></div>
+<div class="panel"><span id="startCount"></span><div class="bar"><i id="startBar"></i></div><span id="endCount"></span><div class="bar"><i id="endBar"></i></div><small>深色是门左边，浅色是门右边。正好在门上的点归右侧。</small></div>
+<p class="math" id="ledger"></p><p id="rates"></p>
+<h2>换成沿平均速度场行走的人</h2><p>保留相同的噪声起点，把它们交给第 39 页的精确一维生成轨迹。下面两行都只比较时段首尾在哪一侧。</p>
+<button id="center">把门移到正中央 x = 0</button><p class="panel" id="comparison"></p><p>在中央，理论平均速度总是零。精确生成轨迹保持各自的分位，左右两侧的人一直留在原侧。训练直线却可以双向穿门。两种走法能有相同的理论位置分布，同时把同一个人送往不同终点。</p><details><summary>怎样只凭分布核对门口的人流？</summary><p>F(x,t) 是 t 时刻门左侧的概率。把前后两次的 F 相减，再除以时间差，得到这段时间的理论平均净流率。把时段缩到一个瞬间，向右的净流率是门口的概率密度乘以当地平均速度。题数较少或时段很短时，实测可能只有零星几人穿门。</p></details></section>
+<small>端点始终独立抽取。种子 __SEED__，同一批原始端点供本页重筛；点位、计数、曲线和得分全在本机计算。纸上练习见第 10、38、61–62 页。</small></main>
+<script>__MATH__</script><script>
+"use strict";
+const data=readTickets("__TICKETS__"), el=id=>document.getElementById(id), num=id=>Number(el(id).value);
+const fmt=(v,d=3)=>v.toFixed(d), ix=v=>v.toLocaleString("en-US"), ink="#193940",teal="#00695f",rust="#ad492c",grid="#c5d5d0";
+let local, chosen=0, useMean=false;
+function label(x,y,s,color=ink,anchor="middle",size=14){return '<text x="'+x+'" y="'+y+'" text-anchor="'+anchor+'" font-size="'+size+'" fill="'+color+'">'+s+'</text>'}
+function line(x,y,xx,yy,color=grid,w=1){return '<line x1="'+x+'" y1="'+y+'" x2="'+xx+'" y2="'+yy+'" stroke="'+color+'" stroke-width="'+w+'"/>'}
+function dot(x,y,r,fill,stroke=fill){return '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2"/>'}
+function showCard() {
+  el("card").hidden=!local.ids.length;
+  if(!local.ids.length)return;
+  chosen=Math.min(local.ids.length-1,Math.max(0,chosen));el("rank").max=local.ids.length;el("rank").value=chosen+1;
+  el("prev").disabled=chosen===0;el("next").disabled=chosen===local.ids.length-1;
+  const i=local.ids[chosen],z=data.z[i],y=data.y[i],t=num("time"),x=(1-t)*z+t*y,center=num("x"),radius=num("radius");
+  const bound=Math.max(3,Math.ceil(Math.max(Math.abs(z),Math.abs(y),Math.abs(center)+radius)));
+  const px=v=>35+460*(v+bound)/(2*bound);
+  let chart='<rect x="'+px(center-radius)+'" y="20" width="'+Math.max(1,px(center+radius)-px(center-radius))+'" height="78" fill="#dfebe3"/>';
+  chart+=line(35,62,495,62,ink)+line(px(z),47,px(y),47,teal,2);
+  const middle=(px(z)+px(y))/2, direction=Math.sign(y-z);
+  if(Math.abs(px(z)-px(y))>12)chart+=line(middle-7*direction,43,middle,47,teal,2)+line(middle-7*direction,51,middle,47,teal,2);
+  chart+=label(px(-bound),116,-bound)+label(px(0),116,0)+label(px(bound),116,bound);
+  chart+=dot(px(z),47,4,"white",teal)+label(px(z),28,"起点 z",teal)+dot(px(y),47,4,rust)+label(px(y),83,"终点 y",rust);
+  chart+=dot(px(x),62,4,ink)+label(px(x),99,"此刻 x",ink);
+  el("rail").innerHTML=chart;
+  el("ticket").textContent="原题 #"+(i+1)+"，来自"+(data.sign[i]<0?"左":"右")+"团。z = "+fmt(z)+"，y = "+fmt(y)+"。沿直线走到 ("+fmt(1-t)+") × ("+fmt(z)+") + "+fmt(t)+" × ("+fmt(y)+") ≈ "+fmt(x)+"，标签 u = y − z ≈ "+fmt(y-z)+"。";
+}
+function drawHist(){
+  const max=Math.max(1,...local.bins.map(pair=>pair[0]+pair[1]));
+  let chart=line(33,125,337,125,ink)+label(28,18,max,ink,"end",12)+label(24,128,"0");
+  local.bins.forEach(([l,r],i)=>{
+    const x=35+i*18.5,h=100*l/max,k=100*r/max;
+    chart+='<rect x="'+x+'" y="'+(125-h)+'" width="16" height="'+h+'" fill="'+rust+'"/><rect x="'+x+'" y="'+(125-h-k)+'" width="16" height="'+k+'" fill="'+teal+'"/>';
+  });
+  for(const tick of [-8,-4,0,4,8])chart+=label(35+(tick+8)*18.5,148,tick);
+  el("hist").innerHTML=chart;
+}
+function showScore(){
+  const any=local.ids.length>0;el("average").disabled=!any;
+  const a=fieldAt(num("x"),num("time")),g=num("group");
+  const exact=g===0?a.v:g<0?a.left:a.right;
+  el("theory").textContent="若把窗口缩成这个精确位置，按已知分布算出的条件平均速度为 "+fmt(exact)+"。当前有限窗口与有限题数的样本均值可以与它不同。";
+  const guess=useMean&&any?local.mean:num("guess");el("og").textContent=fmt(guess);
+  if(!any){el("loss").innerHTML=label(180,85,"没有入窗题，无法给分");el("score").textContent="当前没有可评分的题。增大题数或窗口半径，或把门移近人群。";return}
+  const score=local.variance+(guess-local.mean)**2;
+  let lo=Math.min(-4,Math.floor(local.mean-1),Math.floor(guess)),hi=Math.max(4,Math.ceil(local.mean+1),Math.ceil(guess));
+  const ymax=Math.ceil(Math.max(local.variance+(lo-local.mean)**2,local.variance+(hi-local.mean)**2,1));
+  const xx=v=>42+285*(v-lo)/(hi-lo), yy=v=>125-105*v/ymax;
+  const coords=Array.from({length:66},(_,j)=>{const g=lo+j*(hi-lo)/65;return xx(g)+","+yy(local.variance+(g-local.mean)**2)}).join(" ");
+  el("loss").innerHTML=line(42,20,42,125,ink)+line(42,125,327,125,ink)+label(29,24,ymax)+label(28,129,0)+label(xx(lo),148,lo)+label(xx(0),148,0)+label(xx(hi),148,hi)+'<polyline points="'+coords+'" fill="none" stroke="'+teal+'" stroke-width="2.5"/>'+dot(xx(local.mean),yy(local.variance),4,teal)+dot(xx(guess),yy(score),6,"none",rust);
+  el("score").textContent="样本均值 "+fmt(local.mean)+"。本次均方误差 "+fmt(score)+" = 最低可达 "+fmt(local.variance)+" + 猜测偏离均值的平方 "+fmt((guess-local.mean)**2)+"。";
+}
+function showGate(){
+  const n=num("total"),r=countGate(data,n,num("x"),num("time"),num("span"));
+  for(const [id,t,val] of [["start",r.early,r.before],["end",r.late,r.after]]){
+    el(id+"Count").textContent="t = "+fmt(t)+"，门左侧 "+ix(val)+" / "+ix(n)+" 人";el(id+"Bar").style.width=100*val/n+"%";
+  }
+  el("ledger").textContent="向右 "+ix(r.right)+" − 向左 "+ix(r.left)+" = 净向右 "+ix(r.net)+" 人。门左侧人数的减少量也为 "+ix(r.before-r.after)+"。负数表示净向左。";
+  el("comparison").textContent="配对训练直线　左到右 "+ix(r.right)+"，右到左 "+ix(r.left)+"。精确生成轨迹　左到右 "+ix(r.odeRight)+"，右到左 "+ix(r.odeLeft)+"。生成组门左侧的两次人数为 "+ix(r.odeBefore)+"、"+ix(r.odeAfter)+"。";
+  el("rates").textContent="实测时段净流率 "+fmt(r.empirical,4)+"；同一时段的理论值 "+fmt(r.exact,4)+"；滑块时刻的瞬时理论值 "+fmt(r.instant,4)+"。单位都是每单位生成进度通过门的净概率。";
+}
+function selectWindow(){
+  local=localStats(data,num("total"),num("x"),num("time"),num("radius"),num("group"));chosen=0;
+  el("ox").textContent=fmt(num("x"));el("ot").textContent=fmt(num("time"));
+  const x=num("x"),r=num("radius");
+  el("counts").textContent="窗口 ["+fmt(x-r)+", "+fmt(x+r)+"] 内符合线索的题有 "+ix(local.ids.length)+" 道。左团 "+ix(local.left)+" 道，右团 "+ix(local.ids.length-local.left)+" 道。";
+  if(useMean&&local.ids.length)el("guess").value=local.mean;
+  showCard();drawHist();showScore();
+}
+for(const n of [...new Set([200,2000,20000,data.count].filter(n=>n<=data.count))].sort((a,b)=>a-b))el("total").add(new Option(ix(n),n));
+el("total").value=data.count;
+for(const id of ["x","time","total"])el(id).addEventListener(id==="total"?"change":"input",()=>{selectWindow();showGate()});
+for(const id of ["group","radius"])el(id).onchange=selectWindow;el("span").onchange=showGate;
+el("center").onclick=()=>{el("x").value=0;selectWindow();showGate()};
+el("prev").onclick=()=>{chosen--;showCard()};el("next").onclick=()=>{chosen++;showCard()};
+el("rank").onchange=()=>{chosen=Math.round(num("rank")||1)-1;showCard()};
+el("guess").oninput=()=>{useMean=false;showScore()};
+el("average").onclick=()=>{useMean=true;el("guess").value=local.mean;showScore()};
+el("zero").onclick=()=>{useMean=false;el("guess").value=0;showScore()};
+el("reset").onclick=()=>{el("x").value=.25;el("time").value=.5;el("total").value=data.count;el("group").value=0;el("radius").value=".025";el("span").value=".025";el("guess").value=0;useMean=false;selectWindow();showGate()};
+selectWindow();showGate();
+</script></body></html>

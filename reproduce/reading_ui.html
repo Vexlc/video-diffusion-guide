@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>跟一段方块学三件事 · 从雪花到运动</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f1;color:#193540;font:17px/1.72 "MiSans","Microsoft YaHei",sans-serif}main{max-width:850px;margin:auto;padding:24px clamp(14px,4vw,46px) 50px}a{color:#00665b;text-underline-offset:3px}nav,.buttons,.slider,.options{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap}nav{font-size:15px}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.4}h1{font-size:clamp(29px,5vw,46px);margin:21px 0 8px}h2{font-size:clamp(21px,4vw,29px);margin:0 0 8px}h3{font-size:17px;margin:12px 0 4px}p{margin:8px 0}section{background:#fff;border-top:3px solid #00665b;padding:clamp(14px,3vw,25px);margin:18px 0}figure{margin:12px 0}figcaption,.caption{color:#475e63;font-size:15px}.strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(3px,1.4vw,13px);max-width:640px}.strip canvas{width:100%;height:auto;image-rendering:pixelated;background:#111;display:block}.strip span{text-align:center;color:#4b6164;font-size:13px}.slider,.result,details{background:#edf4ed;padding:10px 14px;margin:12px 0}.slider output{font-variant-numeric:tabular-nums;color:#005a51;font-weight:bold}.slider label{font-weight:650}input[type=range]{width:min(260px,90%);accent-color:#00665b}input[type=radio]{accent-color:#00665b}button{font:inherit;border:1px solid #72988a;border-radius:4px;background:white;padding:3px 10px;cursor:pointer}button:disabled{opacity:.45}.pairs{display:grid;grid-template-columns:1fr 1fr;gap:14px}.pairs article{border-top:2px solid #995239;background:#fbf7f0;padding:8px 12px}.pairs article+article{border-color:#476973;background:#f4f7f8}.pairs p{font-variant-numeric:tabular-nums}.formula{font-family:"DejaVu Sans",sans-serif;overflow-wrap:anywhere}.graph svg{display:block;width:100%;height:auto}.legend{display:none}.result{border-left:3px solid #00665b}fieldset{border:1px solid #c3d3cb;margin:10px 0}legend{font-weight:bold}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #aa492f;outline-offset:2px}@media(max-width:580px){.pairs{grid-template-columns:1fr;gap:8px}.legend{display:block;color:#415a60;font-size:13px}.slider{gap:4px 12px}.slider input{flex:1;min-width:90px}.strip{gap:4px}nav{gap:5px 12px}}
+.compare{overflow-x:auto}.compare svg{display:block;min-width:540px;width:100%;height:auto}.compare:focus-visible{outline:3px solid #aa492f;outline-offset:2px}
+</style>
+<main><nav><a href="../index.html">离线首页</a><a href="../video-diffusion-guide.pdf#page=18">PDF 第 18 页</a><a href="first-film.html">运行小模型</a></nav>
+<h1>跟一段方块学三件事</h1>
+<p>看下面的原片。每格是一帧，方块从第 7 列出发，每帧向右一格。六帧一共含有 1,152 个像素。编码器把它们压成 72 个数，再用训练集的均值和尺度统一量纲。我们只跟其中一个数，看看训练怎样出题，生成又怎样落笔。</p>
+<figure><div class="strip" id="clean"></div><figcaption id="original"></figcaption></figure>
+<section id="training"><h2>① 已经有原片，怎样出练习题？</h2>
+<p>把选中那一格的原片数值叫 <b>y</b>，抽到的噪声叫 <b>z</b>。两道练习共用这对端点。横向进度 t 从纯噪声的 0 走到原片的 1。</p>
+<div class="slider"><label for="step">已走步数</label><input id="step" type="range" min="0" max="24" value="12"><output id="progress" for="step"></output></div>
+<div class="pairs"><article><h3>扩散题 · 猜混入的噪声</h3><div class="formula">x = a·y + σ·z</div><p id="dd"></p><p id="noise"></p></article><article><h3>直线流匹配题 · 猜速度</h3><div class="formula">x = (1−t)z + t·y</div><p id="fm"></p><p id="target"></p></article></div>
+<p class="caption">扩散题采用一种保方差的示例日程，a = sin(πt/2)，σ = cos(πt/2)，所以 a² + σ² = 1。每个点单独表示该噪声量下的训练输入，画曲线时固定了同一份 z。这个小视频生成器实际练的是右边的速度题。</p>
+<p class="caption">网络同时读取整段的 72 个数、进度、方向和首帧点图。下面沿着块 7 的分量 0 对一次答案，块号和分量号都从 0 数起。</p></section>
+<section id="sampling"><h2>② 没有原片，下一步怎么走？</h2>
+<p>生成器只拿到噪声、进度和条件。它读自己上一步留下的状态，猜速度，再往前走 1/24 个时间单位。许多练习题会经过附近，网络学着给出这些题的平均方向。绿色实线记录它跟着所学方向走出的路线。</p>
+<figure><div class="graph" id="graph"></div><p class="legend">棕色长虚线为扩散题，深色点线为直线练习，绿色实线为模型实走。</p><figcaption>横轴是同一段影片的生成进度。竖线和圆点标出当前步数。</figcaption></figure>
+<h3 id="compare-heading">同一个模型，两次回答各做什么？</h3>
+<figure><div class="compare" id="comparison" tabindex="0" role="region" aria-labelledby="compare-heading">__COMPARISON__</div>
+<figcaption>两排共用进度、方向和提示点。上排用原片配出题面，保留标准答案评分。下排读取自己走到的位置，用速度迈出下一步。<span class="legend">横滑可以顺着箭头读完整行。</span></figcaption></figure>
+<p id="teacher"></p>
+<p class="result" id="update"></p><div class="buttons"><button id="prev">上一步</button><button id="next">下一步</button><button id="finish">看成片</button></div>
+<figure><div class="strip" id="decoded"></div><figcaption id="film-caption"></figcaption></figure>
+<p class="caption">横着读胶片，时间过去了五个帧间隔。点“下一步”，改变的是整段影片的生成进度，六帧会一起重新解码。</p></section>
+<section id="control"><h2>③ 只把点下移，视频会怎样？</h2><p>点“看成片”，先记下第一帧和最后一帧的中心，再选第 7 行。生成器两次都从同一份噪声出发，方向都选向右，唯一换掉的输入是首帧点图。上方练习也会随之换成对应的原片。</p>
+<fieldset><legend>首帧提示点的位置</legend><div class="options"><label><input type="radio" name="row" value="3" checked> 第 3 行</label><label><input type="radio" name="row" value="7"> 第 7 行</label></div></fieldset>
+<figure><div class="strip" id="baseline"></div><figcaption>对照成片 · 起点固定在第 3 行。</figcaption></figure><figure><div class="strip" id="changed"></div><figcaption id="chosen"></figcaption></figure><p id="centers" class="result"></p><p>网络把点图编码成特征，由训练过的支路在两个位置修正基座特征。这是借用 ControlNet 思路的微型 DiT。原版 ControlNet 将控制支路接入图像扩散 U-Net。</p><p><a href="#sampling">回看这条路线</a>　<a href="first-film.html">自己运行权重，试另一个点</a>　<a href="index.html#movies">再关掉支路，比较六帧</a>　<a href="playback.html">把这段影片倒放，速度怎样变？</a></p></section>
+<details><summary>本地重算与原论文</summary><p>本页离线回放种子 9317 的网络记录。两段都是留出影片，干净原片只用于出题。进入包内 reproduce 目录，第一条命令用 Python 标准库复算所选一步，第二条用 PyTorch 从随包权重重新编码并查询网络。</p><pre>python3 reading_route.py --row 3 --step 12
+python3 reading_route.py --capture replay/reading-targets.json</pre><p><a href="../reproduce/reading_route.py">本课源码</a>　<a href="../page-index.html#p18">公式与终端入口</a>　<a href="https://arxiv.org/abs/2006.11239">DDPM 原文</a>　<a href="https://arxiv.org/abs/2210.02747">Flow Matching 原文</a>　<a href="https://arxiv.org/abs/2302.05543">ControlNet 原文</a></p></details>
+<p><a href="../pair-lab/index.html">同一份噪声，四段影片</a>　给扩散和流匹配各接一次位置支路，把两种训练题放在一起看。</p>
+</main>
+<script id="recording" type="application/json">__LESSON__</script>
+<script>
+const cases=JSON.parse(document.getElementById('recording').textContent);
+const byId=id=>document.getElementById(id);
+const digits=(n,places=3)=>n.toFixed(places).replace('-','−');
+const films={};
+for(const [row,data] of Object.entries(cases)) films[row]=Uint8Array.from(atob(data.film),c=>c.charCodeAt(0));
+function strip(id) {
+  const parent=byId(id);
+  return Array.from({length:6},(_,f)=>{
+    const label=document.createElement('span'),canvas=document.createElement('canvas');
+    canvas.width=16;canvas.height=12;canvas.setAttribute('aria-label','帧 '+f);
+    label.append(canvas,'帧 '+f);parent.append(label);
+    return canvas.getContext('2d');
+  });
+}
+const original=strip('clean'),decoded=strip('decoded'),baseline=strip('baseline'),changed=strip('changed');
+function paint(context,shade) {
+  const image=context.createImageData(16,12);
+  for(let i=0;i<192;i++){
+    const pixel=shade(i);
+    image.data.set([pixel,pixel,pixel,255],i*4);
+  }
+  context.putImageData(image,0,0);
+}
+const narrow=matchMedia('(max-width:580px)');
+let lastRow;
+function show() {
+  const row=document.querySelector('input[name=row]:checked').value;
+  const k=Number(byId('step').value),data=cases[row],p=data.points[k];
+  if(lastRow!==row) {
+    byId('graph').innerHTML=data.chart;
+    original.forEach((ctx,f)=>paint(ctx,i=>Math.abs(i%16-7-f)<=1 && Math.abs(Math.floor(i/16)-Number(row))<=1 ? 255 : 0));
+    baseline.forEach((ctx,f)=>paint(ctx,i=>films['3'][(24*6+f)*192+i]));
+    changed.forEach((ctx,f)=>paint(ctx,i=>films[row][(24*6+f)*192+i]));
+    byId('chosen').textContent='当前选择的成片 · 起点在第 '+row+' 行。';
+    lastRow=row;
+  }
+  const graph=byId('graph').querySelector('svg');
+  graph.setAttribute('viewBox',narrow.matches?'10 0 501 201':'0 0 660 201');
+  const slice=graph.querySelector('.slice');
+  graph.querySelectorAll('polyline').forEach((path,i)=>{
+    const pos=path.points.getItem(k),dot=slice.querySelectorAll('circle')[i];
+    dot.setAttribute('cx',pos.x);dot.setAttribute('cy',pos.y);
+    graph.querySelectorAll('.marker-value text')[i].textContent=digits(p[['diffusion','linear','generated'][i]]);
+    slice.querySelector('line').setAttribute('x1',pos.x);slice.querySelector('line').setAttribute('x2',pos.x);
+  });
+  byId('original').textContent='出题用的干净原片。首帧中心 (7,'+row+')，末帧中心 (12,'+row+')。坐标按（列，行）从 0 数起。';
+  byId('progress').textContent=k+' / 24　t = '+p.t.toFixed(3);
+  byId('dd').textContent='把原片 '+digits(p.y)+' 乘 '+digits(p.a)+'，再加上噪声 '+digits(p.z)+' 乘 '+digits(p.sigma)+'。题面 x ≈ '+digits(p.diffusion)+'。';
+  byId('noise').textContent='噪声标签 z ≈ '+digits(p.z)+'。';
+  byId('fm').textContent='把噪声 '+digits(p.z)+' 乘 '+digits(1-p.t)+'，再加上原片 '+digits(p.y)+' 乘 '+digits(p.t)+'。题面 x ≈ '+digits(p.linear)+'。';
+  byId('target').textContent='速度标签 y − z ≈ '+digits(p.velocity_label)+'。';
+  for(const cell of byId('comparison').querySelectorAll('[data-readout]')){
+    cell.querySelector('text').textContent=p.comparison[cell.dataset.readout];
+  }
+  byId('teacher').textContent='上排有这道题的速度标签 '+digits(p.velocity_label)+'。这一格的平方误差约为 ('+digits(p.teacher_prediction,6)+' − ('+digits(p.velocity_label,6)+'))² ≈ '+p.component_squared_error.toFixed(4)+'。训练时还要对整段和一批题取平均。';
+  byId('update').textContent=k===24?'已走完 24 步。这格生成值为 '+digits(p.generated)+'，参考原片为 '+digits(p.y)+'。把整组数还原尺度，再一起解码便得到下面六帧。':'第 '+k+' 步的状态是 '+digits(p.generated)+'，网络预测速度 '+digits(p.speed)+'。下一格 ≈ '+digits(p.generated)+' + ('+digits(p.speed)+') / 24 ≈ '+digits(p.next)+'。';
+  byId('prev').disabled=k===0;byId('next').disabled=k===24;byId('finish').disabled=k===24;
+  decoded.forEach((ctx,f)=>paint(ctx,i=>films[row][(k*6+f)*192+i]));
+  byId('film-caption').textContent='第 '+k+' 步的 72 个数解码出的六帧。'+(k===24?'现在可以比较它与开头原片的运动。':'还可继续往前走，直到第 24 步。');
+  const [first,...rest]=data.centers;
+  byId('centers').textContent='第 '+row+' 行这次生成完 24 步后，实测首帧中心 ('+first.join(', ')+')，末帧中心 ('+rest[4].join(', ')+')。中心由最亮的 3 × 3 窗口测得。';
+}
+function step(k){byId('step').value=k;show()}
+byId('step').addEventListener('input',show);
+for(const radio of document.querySelectorAll('[name=row]'))radio.addEventListener('change',show);
+byId('prev').onclick=()=>step(Number(byId('step').value)-1);
+byId('next').onclick=()=>step(Number(byId('step').value)+1);
+byId('finish').onclick=()=>step(24);
+narrow.addEventListener('change',show);show();
+</script></html>

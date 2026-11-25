@@ -1,0 +1,88 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一个点加一个方向 · 实验 P</title><style>
+*{box-sizing:border-box}body{margin:0;background:#edf2ed;color:#193540;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:1000px;margin:auto;padding:clamp(12px,3vw,36px)}header,section{padding:clamp(16px,3vw,28px);background:#fffdf7;border:1px solid #c7d7cf;border-radius:10px;margin-bottom:16px}header{border-top:6px solid #00695f}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.35;margin:6px 0 12px}h1{font-size:clamp(27px,5vw,44px)}h2{font-size:clamp(21px,3.5vw,30px)}h3{font-size:16px;margin:10px 0 3px}.tag,.note{color:#495f62}.tag{font-size:13px;font-weight:bold}.note{font-size:14px}p{margin:6px 0}a{color:#00695f}.controls,nav{display:flex;gap:6px 15px;align-items:center;flex-wrap:wrap;margin:10px 0}.controls label{display:flex;align-items:center;gap:6px}input,button,select{font:inherit;accent-color:#00695f}button,select{background:white;color:inherit;border:1px solid #8aa59b;border-radius:5px;padding:3px 7px}button,summary{cursor:pointer}:focus-visible{outline:3px solid #a74d24;outline-offset:2px}.note code{overflow-wrap:anywhere}.call{border-left:4px solid #00695f;background:#e6f1e9;padding:9px 12px;font-variant-numeric:tabular-nums}.secondary{border-color:#a84e2c;background:#f6eee2}.film{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.film figure{margin:0;text-align:center}.film canvas{display:block;image-rendering:pixelated;width:100%;aspect-ratio:4/3}.film figcaption{font-size:13px}.scene{display:flex;gap:12px;align-items:center;margin:12px 0}.scene canvas{width:88px;flex-shrink:0;image-rendering:pixelated}.math{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0}.math div{background:#edf2eb;padding:9px}.math b,.math small{display:block}.math b{font-size:21px;font-variant-numeric:tabular-nums}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{padding:5px;border-bottom:1px solid #d6ded6;text-align:center}summary{color:#00695f;font-weight:bold}section>img{display:block;width:100%;max-width:710px;margin:10px auto}code{overflow-wrap:anywhere}
+.players{display:flex;flex-wrap:wrap;gap:16px}.players figure{margin:0}.players canvas{display:block;width:132px;image-rendering:pixelated}.players figcaption{font-size:14px;color:#495f62}
+@media(max-width:570px){.film{grid-template-columns:repeat(3,minmax(0,1fr))}.math{gap:4px}.math div{padding:5px}.math small,table{font-size:13px}.math b{font-size:17px}.scene canvas{width:69px}}
+</style></head><body><main><header><div class="tag">实验 P · 潜空间 Flow Matching 与位置控制</div><h1>一个点加一个方向，小车会从哪里出发？</h1>
+<p>给模型首帧的一张亮点图和一个方向标签。冻结的方向网络负责预测速度，两处可训练出口把点图的信息加入隐藏特征。下面可以回放随包小网络的实际输出，比较每次只动一个条件时发生了什么。</p><nav><a href="first-film.html">用自己的起点现场生成</a><a href="#movies">看成片</a><a href="#step">验算加号与速度</a><a href="#scores">查留出成绩</a><a href="motion.html">分清生成速度与片中运动</a></nav></header>
+<section id="movies"><div class="tag">一 · 从同一份起始噪声作答</div><h2>先移点，再换方向</h2><div class="controls"><label>首帧点 <select id="row"><option value="0">(7, 3)</option><option value="1">(7, 7)</option></select></label><label>方向 <select id="dir"><option value="1">向右</option><option value="0">向左</option></select></label>
+<label>噪声 <select id="seed"></select></label><label>支路强度 λ <select id="scale"><option>0</option><option>0.5</option><option selected>1</option></select></label><button id="reset">恢复书中例子</button></div>
+<div class="scene"><canvas id="point" width="16" height="12" aria-label="首帧高斯亮点图"></canvas><div id="task"></div></div>
+<div class="controls"><label>已更新次数 <input id="time" type="range" min="0" max="24" value="24"><output id="tOut"></output></label><button id="final">看第 24 步成片</button></div>
+<h3 id="labelA"></h3><div id="movieA" class="film"></div><h3>对照 · 从同一起点关掉位置支路，方向标签保留</h3><div id="movieB" class="film"></div>
+<details id="player"><summary>播放两段影片，逐帧比位置</summary><div class="controls"><button id="play" type="button">播放六帧</button><label>视频帧 <input id="frame" type="range" min="0" max="5" value="0"><output id="frameNumber">0</output></label></div>
+<div class="players"><figure><canvas id="playingA" width="16" height="12" aria-label="当前控制设置的视频帧"></canvas><figcaption>当前设置</figcaption></figure><figure><canvas id="playingB" width="16" height="12" aria-label="关掉位置支路的同一视频帧"></canvas><figcaption>关掉位置支路</figcaption></figure></div></details>
+<p id="positions" class="call"></p><p class="note">灰度固定在 −1 到 +1。中间图把当时的潜码反标准化后送进同一 VAE 解码器。上、下两条轨迹分别积分；强度从 0 切到 1 并不等于给两段成片调透明度。</p></section>
+<section id="step"><div class="tag">二 · 同一状态的单次调用</div><h2>特征上的加号，怎样改变下一格？</h2><p>选一个调用和一个视频块。先读该块隐藏特征第 0 维的修正，再看模型最终交出的四个速度分量之一。两个加号之后还有网络层，隐藏修正和速度变化各有自己的单位。</p>
+<div class="controls"><label>调用序号 <select id="tick"></select></label><label>隐藏块 <select id="block"><option value="0">第一层</option><option value="1">第二层</option></select></label><label>视频块 <select id="token"></select></label><label>速度分量 <select id="comp"></select></label><button id="book">看第 66 页例题</button></div>
+<p id="location" class="note"></p>
+<div class="math"><div><small>基座块刚输出 h</small><b id="before"></b></div><div><small>支路出口 r</small><b id="res"></b></div><div><small>加完 h + λr</small><b id="after"></b></div></div>
+<p class="call" id="equation"></p><p class="call secondary" id="same"></p><p class="note">“同一状态关控制”使用上排当前的 x，只重算一次速度；第一节的整条无控制对照有自己的 x。使用者可改上方噪声、方向和点，再来核对。</p></section>
+<section id="scores"><div class="tag">三 · 只对没训练过的路线计分</div><h2>能往右走，也能从指定点出发吗？</h2><p>112 条合法路线中，84 条用于训练，28 条用于留出评估。对每条留出路线重复相同的 8 份噪声，分别看首帧中心、首末位移方向和六个中心。每帧用平均亮度最高的 3×3 窗口定位。</p>
+<table><thead><tr><th>强度 λ</th><th>首帧命中</th><th>方向正确</th><th>六帧全中</th></tr></thead><tbody id="scoresBody"></tbody></table>
+<h3>按固定测试顺序取第一段未全中的视频</h3><img src="first-miss.svg" alt="六帧生成画面与逐帧目标和实测中心"><p id="miss"></p>
+<details><summary>用自己的点和随机种子重新生成</summary><p>解压后在 <code>reproduce</code> 目录运行下面这条命令。需要 PyTorch，CPU 可运行。图册的三份噪声使用种子 9317、9318、9319。</p>
+<p><code>python3 flow_hint.py --device cpu --replay ../flow-hint/branch.pt --point 7 6 --direction right --strength 1 --noise-seed 9317 --out replay/my-clip</code></p><p>生成的 <code>sample.svg</code> 展示六帧，终端会打印测得的六个中心。训练数据只有水平匀速小方块，点靠近边界时可能超出训练路线范围。</p></details></section></main>
+<script type="application/json" id="data">__FLOW_HINT__</script><script>
+const data=JSON.parse(document.getElementById('data').textContent),el=id=>document.getElementById(id);
+const cache={};
+const raw=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+function floats(spec){const bytes=raw(spec.data),view=new DataView(bytes.buffer);
+ return Float32Array.from({length:bytes.length/4},(_,i)=>view.getFloat32(4*i,true))}
+function record(scale){const key=Number(scale).toFixed(1);if(!cache[key]){
+ const r=data.records[key];cache[key]={x:floats(r.x),v:floats(r.v),free:floats(r.free),features:floats(r.features),pixels:raw(r.pixels),centers:r.centers};
+ }return cache[key]}
+function options(id,count,offset=0){el(id).replaceChildren(...Array.from({length:count},(_,i)=>new Option(i+offset,i)))}
+options('seed',3,data.eval_seed);options('tick',24,1);options('token',18);options('comp',4);
+const fmt=x=>(Math.abs(x)<.00005?0:x).toFixed(4).replace('-','−');
+function gray(canvas,plane){const ctx=canvas.getContext('2d'),img=ctx.createImageData(16,12);
+ for(let i=0;i<192;i++){const j=4*i;img.data[j]=img.data[j+1]=img.data[j+2]=plane[i];img.data[j+3]=255}ctx.putImageData(img,0,0)}
+function films(id,r,c,k){const box=el(id);box.replaceChildren();
+ for(let f=0;f<6;f++){const fig=document.createElement('figure'),cv=document.createElement('canvas'),caption=document.createElement('figcaption');
+ cv.width=16;cv.height=12;const off=((c*25+k)*6+f)*192;gray(cv,r.pixels.subarray(off,off+192));caption.textContent='帧 '+f;
+ fig.append(cv,caption);box.append(fig)}}
+function selected(){const scene=2*(+el('row').value)+(+el('dir').value);return {scene,case:4*(+el('seed').value)+scene,scale:+el('scale').value}}
+let timer=null;
+function displayFrame(){
+ const f=Number(el('frame').value);
+ el('frameNumber').value=f;
+ for(const id of ['A','B']){
+  const strip=el('movie'+id).querySelectorAll('canvas');
+  el('playing'+id).getContext('2d').drawImage(strip[f],0,0);
+ }
+}
+function pause(){
+ clearInterval(timer);timer=null;el('play').textContent='播放六帧';
+}
+el('play').onclick=()=>{
+ if(timer!==null){pause();return}
+ el('play').textContent='暂停';
+ timer=setInterval(()=>{el('frame').value=(Number(el('frame').value)+1)%6;displayFrame()},350);
+};
+el('frame').oninput=()=>{pause();displayFrame()};
+el('player').ontoggle=()=>{if(!el('player').open)pause()};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
+function drawMovies(){const {scene,case:c,scale}=selected(),ex=data.examples[scene],n=+el('time').value,r=record(scale);
+ el('task').textContent='输入 · 首帧点 ('+ex.point.join(', ')+')，'+ex.label+'。这条路'+(ex.held?'在留出集中':'在训练集中')+'。图上的点只给起始位置。';
+ const point=Array.from({length:192},(_,i)=>Math.round(255*Math.exp(-((i%16-ex.point[0])**2+(Math.floor(i/16)-ex.point[1])**2)/8)));gray(el('point'),point);
+ el('tOut').value=n+' / 24';el('labelA').textContent='当前设置 · λ = '+scale;films('movieA',r,c,n);films('movieB',record(0),c,n);displayFrame();
+ const centers=path=>path.map(p=>'('+p.join(',')+')').join(' ');
+ el('positions').textContent=n===24?'成片实测中心 '+centers(r.centers[c])+'。指定路线 '+centers(ex.target)+'。':'第 '+n+' 次更新后的潜码，六帧仍处在同一生成进度。拖到 24 可查成片中心。';
+}
+function probe(){const {case:c,scale}=selected(),r=record(scale),n=+el('tick').value,t=+el('token').value,k=+el('comp').value,b=+el('block').value;
+ const index=(c*24+n)*72+t*4+k,xi=(c*25+n)*72+t*4+k,hi=(((c*24+n)*2+b)*18+t)*3;
+ el('before').textContent=fmt(r.features[hi]);el('res').textContent=fmt(r.features[hi+1]);el('after').textContent=fmt(r.features[hi+2]);
+ el('location').textContent='调用 '+(n+1)+'，t = '+n+'/24。视频块 '+t+' 在时间组 '+Math.floor(t/6)+'、空间块行 '+Math.floor(t%6/2)+'、块列 '+(t%2)+'。显示隐藏维 0，速度分量 '+k+'。';
+ el('equation').textContent='x′ = x + u / 24 = '+fmt(r.x[xi])+' + ('+fmt(r.v[index])+') / 24 ≈ '+fmt(r.x[xi+72])+'。';
+ el('same').textContent='把同一 x、同一时间和方向送回基座并关掉位置支路，速度为 '+fmt(r.free[index])+'。当前位置的控制使该速度分量改变 '+fmt(r.v[index]-r.free[index])+'。';
+}
+function paint(){drawMovies();probe()}
+function defaults(){pause();el('frame').value=0;el('seed').value=0;el('row').value=0;el('dir').value=1;el('scale').value=1;el('time').value=24;
+ el('tick').value=12;el('block').value=0;el('token').value=8;el('comp').value=0;paint()}
+for(const id of ['row','dir','scale','seed'])el(id).onchange=paint;
+el('time').oninput=drawMovies;for(const id of ['tick','block','token','comp'])el(id).onchange=probe;
+el('reset').onclick=defaults;el('book').onclick=defaults;el('final').onclick=()=>{el('time').value=24;drawMovies()};
+el('scoresBody').innerHTML=data.scales.map(s=>{const m=data.scores[s.toFixed(1)];return '<tr><td>'+s+'</td>'+['first','direction','strict'].map(k=>'<td>'+m[k]+' / '+m.n+'</td>').join('')+'</tr>'}).join('');
+el('miss').textContent=data.first_error?'种子 '+data.first_error.seed+'，该噪声下第 '+data.first_error.order+' 条留出路线。橙字标出测得的中心与目标不同的帧。':'这批题的六帧中心全部命中。';
+defaults();
+</script></body></html>

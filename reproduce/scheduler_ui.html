@@ -1,0 +1,74 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>对着开源调度器算一步</title><style>
+*{box-sizing:border-box}body{margin:0;color:#193540;background:#f3f5ef;font:17px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:920px;margin:auto;padding:clamp(14px,4vw,42px)}h1,h2,h3{line-height:1.32}h1{font:700 clamp(30px,5vw,50px)/1.25 "Noto Serif CJK SC",serif}h2{font-size:24px}h3{font-size:19px}a{color:#00695f}section{background:#fffef9;border:1px solid #cfddd4;border-radius:8px;padding:clamp(14px,3vw,27px);margin:20px 0}p{max-width:76ch}label{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}select,input,button{font:inherit}input[type=range]{width:min(240px,49vw);accent-color:#00695f}button,select{padding:.3em .55em}select{max-width:100%}button{cursor:pointer}.controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.plot{display:grid;grid-template-columns:minmax(185px,0.9fr) 1.6fr;gap:22px;align-items:start}.cells{display:grid;grid-template-columns:repeat(var(--n),1fr);background:#263a40;gap:1px;padding:2px}.cells button{border:0;min-width:0;padding:0;aspect-ratio:1}.cells button[aria-pressed=true]{outline:3px solid #ff743e;outline-offset:-3px}.cells button:focus-visible{outline:3px solid #2791ff;z-index:1}.nums{padding:12px;background:#edf4ef;border-left:4px solid #087466;font-variant-numeric:tabular-nums}.nums p{margin:5px 0}.small{font-size:14px;color:#445c63}.film{width:100%;display:block}code{overflow-wrap:anywhere}pre{padding:11px;background:#eef1ef;white-space:pre-wrap;overflow-wrap:anywhere}summary{cursor:pointer;font-weight:bold}:target{scroll-margin-top:15px}@media(max-width:640px){.plot{grid-template-columns:1fr}.cells{max-width:320px}}
+__COURSE_STYLE__</style><main><a data-course href="../index.html">回到离线首页</a><h1>对着开源调度器算一步</h1><p>模型猜亮度或速度，调度器用这个猜测更新整段影片。先动一次时间滑块，再点一格，看库实际返回的数和自己代公式的数是否相合。</p>
+<section id="ddim"><h2>一、一个像素的猜测超过了亮度范围</h2><p>第 13 次更新时，看帧 2 的第 8 行、第 10 列。把干净猜测限制到 [−1, 1]，看看下一格会往哪个方向变。</p><div class="panel"></div></section>
+<section id="flow"><h2>二、噪声钟倒着走，速度要怎样填？</h2><p>首帧点在第 7 列、第 3 行，方向向右。模型给出生成进度每增加 1 的变化量 u。调度器按照剩余噪声 σ 走，σ 从 1 减到 0。选一格潜码，沿两个方向各走一步。</p><div class="panel"></div></section>
+<section><h2>让 CPU 重跑同一份记录</h2><p>网页逐格读取随包网络与 Diffusers 0.35.1 的实测输出，并用 JavaScript 重新计算公式。解压后进入 <code>reproduce</code> 目录，第一行只需 Python 标准库。要重新运行两个神经网络，可在已有 PyTorch 的环境安装固定版本的库，再执行第三行。</p>
+<pre>python3 scheduler_report.py --kind flow --step 13 --index 30
+python3 -m pip install diffusers==0.35.1
+python3 scheduler_bridge.py --out replay/schedulers.json
+python3 scheduler_report.py --record replay/schedulers.json --out replay/scheduler-lab</pre><p>运行记录列出 PyTorch 版本、权重与库源码的 SHA-256。权重和起始噪声都在包内。<a href="record.json">实测记录</a> <span data-course>· <a href="../reproduce/scheduler_bridge.py">复现实验源码</a></span> · <a href="https://github.com/huggingface/diffusers/blob/v0.35.1/src/diffusers/schedulers/scheduling_ddim.py#L411-L448">DDIM 更新源码</a> · <a href="https://github.com/huggingface/diffusers/blob/v0.35.1/src/diffusers/schedulers/scheduling_flow_match_euler_discrete.py#L432-L467">Flow Euler 更新源码</a></p></section></main>
+<script type="application/json" id="record">__TRACES__</script><script>
+"use strict";
+const data=JSON.parse(document.getElementById("record").textContent);
+function vector(field){
+ const bytes=Uint8Array.from(atob(field.data),c=>c.charCodeAt(0)), view=new DataView(bytes.buffer);
+ return Array.from({length:bytes.length/4},(_,i)=>view.getFloat32(i*4,true));
+}
+const fmt=n=>n.toFixed(5),options=n=>Array.from({length:n},(_,i)=>'<option>'+i+'</option>').join('');
+function mount(kind){
+ const box=document.getElementById(kind).querySelector(".panel"), test=data[kind], pixel=kind==="ddim";
+ const [height,width]=test.shape.slice(-2),defaultBlock=pixel?2:1;
+ const steps=test.steps.map(row=>({...row,...Object.fromEntries(["x","v","next","alternate"].map(k=>[k,vector(row[k])]))}));
+ box.innerHTML='<div class="controls"><label>第几次更新 <input type="range" min="1" max="24" value="13"><output>13</output></label><label>'+(pixel?'影片帧':'时间组')+' <select class="block">'+options(pixel?6:3)+'</select></label>'+(pixel?'':'<label>潜码通道 <select class="channel">'+options(2)+'</select></label>')+'<button class="reset" type="button">回到书中例题</button></div><p class="small caption"></p><div class="plot"><div><div class="cells" role="group" aria-label="按行和列选择读数"></div><p class="small legend"></p></div><div class="nums" aria-live="polite"></div></div><details><summary>比较分别走完 24 步的六帧影片</summary><img class="film" alt="讲义与两个库配置各自独立采样的六帧成片"><p class="end"></p></details>';
+ const find=s=>box.querySelector(s),slider=find('input'),block=find('.block'),channel=find('.channel'),cells=find('.cells');
+ let row=pixel?8:1,col=pixel?10:2;
+ cells.style.setProperty('--n',width);
+ for(let i=0;i<width*height;i++){
+   const cell=document.createElement('button');cell.type="button";
+   cell.setAttribute('aria-label','第 '+Math.floor(i/width)+' 行、第 '+i%width+' 列');
+   cell.onkeydown=e=>{
+     const offset={ArrowRight:[0,1],ArrowLeft:[0,-1],ArrowUp:[-1,0],ArrowDown:[1,0]}[e.key];
+     if(!offset)return;e.preventDefault();
+     row=Math.max(0,Math.min(height-1,row+offset[0]));col=Math.max(0,Math.min(width-1,col+offset[1]));
+     update();cells.children[row*width+col].focus();
+   };
+   cell.onclick=()=>{row=Math.floor(i/width);col=i%width;update()}; cells.append(cell);
+ }
+ const film=find('.film');
+ function films(){
+   const canvas=document.createElement('canvas');canvas.width=780;canvas.height=276;const g=canvas.getContext('2d');
+   const labels=pixel?['讲义 DDIM','库・关闭裁剪','库・开启裁剪']:['讲义欧拉','库接收 −u','库接收 +u'];
+   g.fillStyle='#fffef9';g.fillRect(0,0,780,276);g.font='16px sans-serif';
+   for(let f=0;f<6;f++){g.fillStyle='#39595a';g.fillText('帧 '+f,142+f*106,21)}
+   test.films.forEach((clip,i)=>{g.fillStyle='#193540';g.fillText(labels[i],5,75+i*82);clip.forEach((frame,f)=>frame.forEach((line,r)=>line.forEach((p,c)=>{g.fillStyle='rgb('+[p,p,p]+')';g.fillRect(126+f*106+c*6,31+i*82+r*6,6,6)})))});
+   film.src=canvas.toDataURL();find('.end').textContent='与讲义从同一起点独立走完 24 步后，匹配设置的终点均方根差为 '+test.reference.rmse.toExponential(2)+'。改动设置相对匹配设置的终点均方根差为 '+fmt(test.changed.rmse)+(pixel?'（亮度单位）。':'（标准化潜码单位）。这次匹配设置的首末帧中心为 (7,3) 和 (12,3)，符号反向时为 (4,4) 和 (2,8)。');
+ }
+ function update(){
+   const s=steps[slider.value-1],group=Number(block.value),ch=channel?Number(channel.value):0;
+   const start=(pixel?group:group*2+ch)*width*height,k=start+row*width+col;
+   find('output').value=slider.value;
+   const deltas=s.next.slice(start,start+width*height).map((p,i)=>Math.abs(p-s.alternate[start+i]));
+   const peak=Math.max(...deltas);
+   Array.from(cells.children).forEach((cell,i)=>{const gray=peak?Math.round(255*deltas[i]/peak):0;cell.style.backgroundColor='rgb('+[gray,gray,gray]+')';cell.setAttribute('aria-pressed',String(i===k-start));cell.tabIndex=i===k-start?0:-1});
+   find('.legend').textContent='格子亮度表示改变设置后，下一格相差多少。黑色为 0，本面板白色上限为 '+fmt(peak)+'。橙框是当前读数，也可用方向键移一格。';
+   const x=s.x[k],v=s.v[k];let actual,alternate,explain;
+   if(pixel){
+     const [a,b,c,d]=s.coef, clean=a*x-b*v,eps=b*x+a*v,cut=Math.max(-1,Math.min(1,clean));
+     actual=c*clean+d*eps;alternate=c*cut+d*eps;
+     find('.caption').textContent='库索引 t = '+s.t+'，网络连续时钟 = '+(s.t+1)+'/24。整段 1,152 个干净猜测中有 '+s.outside+' 个越界。';
+     explain='<p>ŷ = '+fmt(a)+' × x − '+fmt(b)+' × v = <b>'+fmt(clean)+'</b></p><p>ε̂ = '+fmt(b)+' × x + '+fmt(a)+' × v = '+fmt(eps)+'</p><p>下一格 = '+fmt(c)+' × ŷ + '+fmt(d)+' × ε̂。开启裁剪时，第一项里的 ŷ 取 '+fmt(cut)+'。</p>';
+   } else {
+     const dt=s.following-s.sigma;actual=x+dt*(-v);alternate=x+dt*v;
+     find('.caption').textContent='库时刻 t = '+fmt(s.t)+'，噪声 σ = '+fmt(s.sigma)+' → '+fmt(s.following)+'，网络生成进度 τ = '+fmt(1-s.sigma)+'。';
+     explain='<p>库步宽 Δσ = '+fmt(dt)+'。模型沿生成进度的速度 u = '+fmt(v)+'。</p><p>匹配设置　x′ = x + Δσ × ('+fmt(-v)+')</p><p>改变符号　x′ = x + Δσ × ('+fmt(v)+')</p>';
+   }
+   find('.nums').innerHTML='<strong>'+(pixel?'帧 ':'时间组 ')+group+(pixel?'':'，通道 '+ch)+'，第 '+row+' 行、第 '+col+' 列</strong><p>输入 x = '+fmt(x)+'　网络输出 '+(pixel?'v':'u')+' = '+fmt(v)+'</p>'+explain+'<p>匹配设置　手算 <b>'+fmt(actual)+'</b>　库 '+fmt(s.next[k])+'</p><p>改变设置　手算 <b>'+fmt(alternate)+'</b>　库 '+fmt(s.alternate[k])+'</p>';
+ }
+ function reset(){row=pixel?8:1;col=pixel?10:2;slider.value=13;block.value=defaultBlock;if(channel)channel.value=0;update()}
+ slider.oninput=block.onchange=update;if(channel)channel.onchange=update;
+ find('.reset').onclick=reset;films();reset();
+}
+mount('ddim');mount('flow');
+</script></html>

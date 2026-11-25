@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>少算几步，影片会变短吗？ · 从雪花到运动</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f5ef;color:#19383d;font:17px/1.65 "MiSans","Noto Sans CJK SC","Microsoft YaHei",sans-serif}main{max-width:970px;margin:auto;padding:clamp(16px,4vw,46px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.3}h1{font-size:clamp(31px,5vw,50px);margin:.48em 0 .22em}h2{font-size:clamp(22px,3.2vw,30px);margin:1.15em 0 .25em}p{margin:.4em 0 .8em}a{color:#00665c;text-underline-offset:3px}nav{font-size:.91em}.controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px 20px;margin:12px 0}label{font-weight:650}button,select,input{font:inherit;color:inherit;accent-color:#006b61}button,select,.save{display:inline-block;background:white;border:1px solid #668980;border-radius:4px;padding:3px 9px;cursor:pointer}button:hover,.save:hover{background:#edf4ed}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #a95029;outline-offset:3px}.striprow{display:grid;grid-template-columns:140px 1fr;align-items:center;gap:12px 20px;padding:9px 13px;border-bottom:1px solid #c9d9d0;background:#fffdf7}.striprow b,.striprow small{display:block}.film{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.film button{background:transparent;border:2px solid transparent;padding:1px;font-size:14px;line-height:1.3}.film button[aria-pressed=true]{border-color:#0c7667}.shot{width:100%;height:auto;image-rendering:pixelated;display:block}.box{padding:12px 16px;background:#e9f0e7;border-left:4px solid #00665c}.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}figure{margin:0;background:#fffdf7;border:1px solid #cbd7cd;border-radius:4px;padding:12px}figcaption{font-size:.95em}.view{position:relative;width:min(100%,225px);margin:8px auto}.view canvas{cursor:crosshair}.view i{position:absolute;pointer-events:none;border:2px solid #ffb54d;box-shadow:0 0 0 1px #744a1d}.nums{font-variant-numeric:tabular-nums}input[type=number]{width:4em}output{font-weight:bold}.save{font-size:.93em}small{color:#445f62}code{overflow-wrap:anywhere}summary{cursor:pointer;color:#00665c}details{margin-top:16px}@media(max-width:660px){.striprow{grid-template-columns:1fr;gap:2px}.striprow b,.striprow small{display:inline}.striprow small{margin-left:.4em}.film{gap:3px}.duo{gap:8px}figure{padding:8px}.save{font-size:.83em}.controls{gap:7px 12px}}
+</style>
+<main>__NAV__
+<h1>少算几步，影片会变短吗？</h1>
+<p>两次生成用同一个视频网络、同一卷六帧雪花。第一次计划分 24 步画完，第二次从头出发，分 6 步画完。先数每排有几帧，再看方块边缘的亮度。</p>
+<div class="controls"><label>同一份起始噪声 <select id="case"></select></label></div>
+<section id="sheets"><h2>同样算完第 6 步，走到了哪里？</h2>
+<p>每排从左到右是帧 0 至 5。先比较两排的第 6 步，再比较走完整个日程的两段成片。点击一帧可以在下面放大。</p>
+<div id="gallery"></div><p class="box nums" id="difference"></p></section>
+<section id="playback"><h2>只改播放速度，再看同一个像素</h2>
+<div class="controls"><label>帧率 <select id="fps"><option value="3">每秒 3 帧</option><option value="6">每秒 6 帧</option></select></label>
+<label>影片帧 <input id="frame" type="range" min="0" max="5" value="2"> <output id="frameNo"></output></label><button id="play">同步播放两段成片</button></div>
+<p id="time" class="nums"></p>
+<div class="duo" id="projectors"></div>
+<div class="controls"><label>第 <input id="row" type="number" min="0" max="11" value="5"> 行</label><label>第 <input id="col" type="number" min="0" max="15" value="10"> 列</label></div>
+<p id="pixel" class="box nums"></p><p>橙框跟踪同一屏幕位置。下载的是可在浏览器打开的动态 PNG，一次播放含六帧，每个源像素放大 12 倍。两档帧率用同一串像素，只改每帧的停留时间。</p></section>
+<details><summary>用 Python 自己查一格、导出动画、重新运行模型</summary>
+<p>在完整包的 <code>reproduce</code> 目录用 <code id="cli"></code>。标准库会打印三个亮度值与时间，并将所选六步片导出为动画。把 <code>--steps 6</code> 换成 <code>--steps 24</code> 可导出另一段。</p>
+<p>想从初始噪声重新采样，可以用 CPU 版 PyTorch 运行 <code>python3 timing_capture.py --out replay/timing</code>，然后打开该目录里的 <code>timing.html</code>。网络每一步同时更新 6 × 12 × 16 个灰度值。两次采样复用相同权重和 96 段初始雪花，页面保留其中前八组。</p></details>
+</main><script>
+"use strict";
+const data=__LESSON__;
+const [cases,count,height,width]=data.shape, size=height*width;
+const el=id=>document.getElementById(id);
+const movies=Object.fromEntries(Object.entries(data.panels).map(([key,encoded])=>[key,Uint8Array.from(atob(encoded),ch=>ch.charCodeAt(0))]));
+const rows=[["partial","长日程 · 6/24","刚走四分之一"],["24","长日程 · 24/24","成片"],["6","短日程 · 6/6","从头走完的成片"]];
+const photos={};
+const selected=()=>({c:+el("case").value,f:+el("frame").value,r:+el("row").value,x:+el("col").value,fps:+el("fps").value});
+function picture(key,c,f){const start=((c-1)*count+f)*size;return movies[key].subarray(start,start+size)}
+function canvasFor(parent){
+  const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
+  canvas.className="shot";canvas.setAttribute("aria-hidden","true");parent.append(canvas);return canvas;
+}
+function draw(canvas,values){
+  const ctx=canvas.getContext("2d"),img=ctx.createImageData(width,height);
+  values.forEach((v,i)=>{img.data[4*i]=img.data[4*i+1]=img.data[4*i+2]=v;img.data[4*i+3]=255});
+  ctx.putImageData(img,0,0);
+}
+for(let i=1;i<=cases;i++)el("case").add(new Option("起点 "+i,i));
+for(const [key,title,progress] of rows){
+  const row=document.createElement("div");row.className="striprow";
+  row.innerHTML='<div><b>'+title+'</b><small>'+progress+'</small></div><div class="film"></div>';
+  const grid=row.lastChild;photos[key]=[];
+  for(let f=0;f<count;f++){
+    const btn=document.createElement("button");
+    btn.setAttribute("aria-label",title+"，选择帧 "+f);
+    photos[key].push(canvasFor(btn));btn.append("帧 "+f);
+    btn.onclick=()=>{stop();el("frame").value=f;display()};grid.append(btn);
+  }
+  el("gallery").append(row);
+}
+for(const key of ["24","6"]){
+  const fig=document.createElement("figure");
+  fig.innerHTML='<figcaption><strong>'+key+' 步成片</strong></figcaption><div class="view"></div><a class="save" id="save-'+key+'">下载这段动画</a>';
+  const parent=fig.querySelector(".view"),canvas=canvasFor(parent);
+  canvas.id="view-"+key;
+  const mark=document.createElement("i");mark.id="mark-"+key;parent.append(mark);
+  canvas.onclick=e=>{
+    const b=canvas.getBoundingClientRect();stop();
+    el("col").value=Math.max(0,Math.min(width-1,Math.floor((e.clientX-b.left)*width/b.width)));
+    el("row").value=Math.max(0,Math.min(height-1,Math.floor((e.clientY-b.top)*height/b.height)));
+    display();
+  };
+  el("projectors").append(fig);
+}
+let timer=null, previousCase=0, changed=[];
+function stop(){if(timer!==null)cancelAnimationFrame(timer);timer=null;el("play").textContent="同步播放两段成片"}
+function display(){
+  const {c,f,r,x,fps}=selected();
+  if(c!==previousCase){
+    for(const [key] of rows)photos[key].forEach((canvas,j)=>draw(canvas,picture(key,c,j)));
+    changed=photos["6"].map((_,j)=>{const a=picture("6",c,j),b=picture("24",c,j);return a.reduce((sum,v,i)=>sum+Number(v!==b[i]),0)});
+    previousCase=c;
+  }
+  for(const [key] of rows)photos[key].forEach((canvas,j)=>canvas.parentElement.setAttribute("aria-pressed",String(j===f)));
+  el("frameNo").textContent=f+" / "+(count-1);
+  el("difference").textContent="两段成片的帧 "+f+" 有 "+changed[f]+" / "+size+" 格显示亮度不同。整卷六帧合计 "+changed.reduce((a,b)=>a+b,0)+" / "+(count*size)+" 格。这里按 0 至 255 的灰度逐格比较。";
+  el("time").textContent="帧 "+f+" 在 "+f+"/"+fps+" 秒开始，显示 1/"+fps+" 秒。连末帧一起播完，片长 "+count+" ÷ "+fps+" = "+(count/fps)+" 秒。";
+  const gray=key=>picture(key,c,f)[r*width+x];
+  el("pixel").textContent="帧 "+f+"，第 "+r+" 行、第 "+x+" 列。长日程走到 6/24 时是 "+gray("partial")+"，走完是 "+gray("24")+"。换短日程，6/6 时是 "+gray("6")+"。";
+  for(const key of ["24","6"]){
+    draw(el("view-"+key),picture(key,c,f));
+    Object.assign(el("mark-"+key).style,{left:100*x/width+"%",top:100*r/height+"%",width:100/width+"%",height:100/height+"%"});
+    const filename=c+"-"+key+"-"+fps,link=el("save-"+key);
+    if(link.dataset.clip!==filename){
+      link.download="case-"+c+"-steps-"+key+"-fps-"+fps+".png";link.href="data:image/png;base64,"+data.clips[filename];link.dataset.clip=filename;
+    }
+  }
+  el("cli").textContent="python3 timing_report.py --case "+c+" --frame "+f+" --row "+r+" --col "+x+" --fps "+fps+" --steps 6 --animation replay/film.png";
+}
+el("play").onclick=()=>{
+  if(timer!==null){stop();return}
+  const start=performance.now(),fps=selected().fps;el("frame").value=0;display();el("play").textContent="暂停";
+  function tick(now){
+    const index=Math.floor((now-start)*fps/1000);
+    const next=Math.min(index,count-1);
+    if(next!==+el("frame").value){el("frame").value=next;display()}
+    if(index>=count){stop();return}
+    timer=requestAnimationFrame(tick);
+  }
+  timer=requestAnimationFrame(tick);
+};
+for(const id of ["case","fps","frame"])el(id).addEventListener(id==="frame"?"input":"change",()=>{stop();display()});
+for(const id of ["row","col"])el(id).addEventListener("change",()=>{
+  const input=el(id);input.value=Math.max(0,Math.min(+input.max,Math.round(+input.value||0)));stop();display();
+});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stop()});
+display();
+</script></html>

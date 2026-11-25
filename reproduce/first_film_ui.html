@@ -1,0 +1,211 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>生成我的第一段影片 · 从雪花到运动</title>
+<style>
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;background:#edf2ed;color:#193540;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:900px;margin:auto;padding:clamp(12px,3vw,32px)}section,header{background:#fffdf8;border:1px solid #cbd8d1;padding:clamp(15px,3vw,25px);margin-bottom:14px;border-radius:8px}header{border-top:5px solid #00695f}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.35;margin:4px 0 10px}h1{font-size:clamp(28px,5vw,41px)}h2{font-size:24px}h3{font-size:17px;margin:12px 0 4px}p{margin:6px 0}a,summary{color:#00695f}summary,button{cursor:pointer}a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #ab4829;outline-offset:2px}.note,small{color:#465e63}.controls,nav,.layout{display:flex;gap:8px 15px;flex-wrap:wrap;align-items:center}.layout{gap:12px 22px}.controls{margin:8px 0}.controls label{display:inline-flex;gap:5px;align-items:center}select,button,input{font:inherit;accent-color:#00695f}button,select{color:inherit;background:white;border:1px solid #8ba59c;border-radius:5px;padding:4px 9px}button:disabled{cursor:default;opacity:.55}.primary{background:#00695f;color:white;font-weight:650}.map{width:176px;height:132px;image-rendering:pixelated;cursor:crosshair;border:1px solid #79948a}.film{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.film figure{margin:0;text-align:center}.film canvas{width:100%;display:block;image-rendering:pixelated}.film figcaption{font-size:13px}.film .selected{outline:3px solid #cf792b;outline-offset:-3px}fieldset{min-width:0;border:0;margin:0;padding:0}.math,.readout{background:#e6f1e9;padding:8px 12px;border-left:4px solid #00695f}.readout{font-variant-numeric:tabular-nums}.status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:25px}.status progress{width:130px;accent-color:#00695f}details{margin:8px 0}code{overflow-wrap:anywhere;user-select:all}.screen{width:144px;image-rendering:pixelated;display:block}figure.large{margin:6px 0}.large figcaption{text-align:center}.formula{font-family:"DejaVu Serif",serif}.guide{color:#385651}nav{margin-top:8px}.options{flex:1;min-width:min(270px,100%)}@media(max-width:550px){.film{grid-template-columns:repeat(3,minmax(0,1fr))}.map{width:128px;height:96px}.layout{gap:6px 12px}h2{font-size:21px}}
+.winBand{display:flex;gap:2px;margin:5px 0 8px;max-width:280px}.winBand i{flex:1;height:9px;background:#d1d9d0}.winBand i.on{background:#00695f}.winScroll{overflow-x:auto}#winTable{font-variant-numeric:tabular-nums;border-collapse:collapse}#winTable th,#winTable td{padding:.28em .52em;text-align:left;border-bottom:1px solid #cbd8ce}</style><main><header><h1>生成我的第一段影片</h1><p>在小黑板上给方块一个起点，再告诉它向左还是向右。浏览器会用随包模型从 72 个随机数出发，算出六帧画面。第一次保留默认设置，点“生成六帧”。</p>__GUIDE_NAV__</header>
+<section id="setup"><h2>选一个起点</h2><fieldset id="settings"><div class="layout"><canvas id="point" width="160" height="120" class="map" aria-label="首帧的空间提示图，也可以用右侧列和行选框选点"></canvas><div class="options"><div class="controls"><label>列 <select id="col"></select></label><label>行 <select id="row"></select></label><label>方向 <select id="direction"><option value="right">向右</option><option value="left">向左</option></select></label></div><p class="note">左上角是 (0,0)。亮点只告诉模型首帧从哪里出发。</p>
+<details><summary>更换噪声或控制强度</summary><div class="controls"><label>噪声种子 <select id="seed"></select></label><label>位置支路强度 λ <select id="strength"><option>0</option><option>0.5</option><option selected>1</option></select></label></div><p class="note">相同种子会取相同的 72 个起始数。本页附三份起始噪声。强度 0 会关掉位置支路，方向标签仍送入基座。</p></details></div></div>
+<div class="controls"><button id="generate" class="primary">生成六帧</button><button id="move" hidden>沿用上一段设置，移到第 7 行再生成</button></div></fieldset>
+<p><a href="#budget">同样问四次速度，可以提前停，也可以走完全程吗？</a></p><div class="status"><span role="status" id="status">就绪</span><a id="see" href="#results" hidden>查看这次成片</a><progress id="progress" max="24" value="0" hidden></progress></div><noscript>本页的本地计算需要启用 JavaScript。打开 PDF，封面可以看成片，第 18 页可以跟算一次生成更新。</noscript></section>
+<section id="results" hidden><h2>看模型画了什么</h2><div id="previous" hidden><h3 id="previousTitle"></h3><div class="film" id="previousFrames"></div></div>
+<h3 id="currentTitle"></h3><div class="film" id="currentFrames"></div><p class="readout" id="measure"></p>
+<details id="playback"><summary>播放六帧，逐格看位置</summary><div class="layout"><figure class="large"><canvas id="screen" class="screen" width="16" height="12"></canvas><figcaption id="screenLabel"></figcaption></figure><div class="controls"><button id="play">播放</button><label>视频帧 <input id="frame" type="range" min="0" max="5" value="0"></label></div></div></details>
+<h3>这段影片怎样生成？</h3><label>已更新次数 <input id="step" type="range" min="0" max="24" value="12"> <output id="number"></output></label><div id="draft" class="film"></div>
+<p class="math"><span class="formula">下一步的潜码 = 当前潜码 + 预测速度 ÷ 24</span><br><span id="equation"></span></p><p class="note">潜码是解码器能读的一组数字。每一步同时修改整段视频的 72 个数。拖上面的滑块，看的始终是同一段影片的六帧。</p>
+<details><summary>在 Python 中复现这次设置</summary><p>已安装 PyTorch 时，在解压包的 <code>reproduce</code> 目录运行下方命令。CPU 即可。六帧和实测中心将写成图或打印到终端。</p><p><code id="command"></code></p><p>本地实现包括方向 DiT、两处空间控制出口、24 次流匹配速度更新和视频解码器。__SOURCE_LINK__</p></details>
+<nav><a href="#setup">回到起点再试一次</a>__MORE_LINKS__</nav></section><section id="budget"><h2>同样问几次速度，能画出什么？</h2><p>使用<a href="#setup">上方选好的起点与条件</a>。三种走法各自从同一个初始潜码重新开始。每次网络预测整段影片的速度，计一次查询。</p>
+<div class="controls"><label>每种走法可查询 <select id="allow"><option>2</option><option selected>4</option><option>8</option><option>12</option><option>24</option></select> 次</label><button id="compare" class="primary">生成三排对照</button></div><span id="budgetStatus" role="status">选择预算后即可在本机计算。</span>
+<div id="budgetOutput" hidden><div id="rows"></div><h3 id="ask">打开一次速度查询</h3><div class="controls"><label>走法 <select id="which"><option value="stop">沿用 24 步网格</option><option value="euler">欧拉走完全程</option><option value="midpoint" selected>中点走完全程</option></select></label><label>第 <select id="call"></select> 次</label></div>
+<p class="readout" id="query"></p><p class="math" id="accept"></p><p class="note">这里追踪第 8 号视频块的分量 0。每次网络同时看 72 个潜码数和生成进度。中点法第二次查询用的是估算的半步位置，更新时从这一步的起点出发。</p>
+<details><summary>用 Python 复算同一对照</summary><p>在解压包的 <code>reproduce</code> 目录使用装有 PyTorch 的 Python。</p><code id="budgetCmd"></code></details>
+</div>__SCORES_LINK__</section><section id="when"><h2>位置提示放在前段或后段，会画到同一处吗？</h2>
+<p>沿用<a href="#setup">上方的起点、方向、强度和种子</a>，四排各自走完 24 步。前段从第一步起使用提示，后段在最后几步使用提示。第一遍可保留 12 步，生成后先比较影片帧 3。</p>
+<div class="controls"><label>前段、后段各用提示 <select id="winWidth"></select> 步</label><button id="winRun" class="primary">生成四排影片</button></div><p role="status" id="winStatus">每排都从同一份噪声开始。</p>
+<div id="winResult" hidden><div id="winFilms"></div><h3>在同一次更新里读一个潜码</h3><label>第几次更新 <input type="range" min="1" max="24" value="13" id="winStep"> <output id="winNumber"></output></label>
+<p class="note">追踪块 8 的分量 0。每行都用自己刚走到的状态问速度，x′ = x + u / 24。</p><div class="winScroll"><table id="winTable"><thead><tr><th>位置支路</th><th>本步 λ</th><th>当前位置 x</th><th>速度 u</th><th>下一格 x′</th></tr></thead><tbody></tbody></table></div>
+<details><summary>复现当前的四排影片</summary><p>在解压包的 <code>reproduce</code> 目录运行，使用已安装 PyTorch 的 Python。打开输出目录的 <code>window-films.svg</code> 看成片。</p><code id="winCmd"></code></details></div>
+__WINDOW_SCORES__</section>
+</main>
+<script id="model" type="application/json">__MODEL__</script><script>
+__DECODER__
+__NETWORK__
+</script><script>
+'use strict';
+const el=id=>document.getElementById(id),model=filmModel(JSON.parse(el('model').textContent));
+const coord=p=>'('+p.join(',')+')',dirName=key=>key==='right'?'向右':'向左';
+const setOptions=(id,values,defaultValue)=>{for(const v of values)el(id).add(new Option(v,v));el(id).value=defaultValue};
+setOptions('col',Array.from({length:16},(_,i)=>i),7);setOptions('row',Array.from({length:12},(_,i)=>i),3);setOptions('seed',Object.keys(model.starts),9317);
+const selectNames=['col','row','direction','seed','strength'];
+let current=null,busy=false,timer=null;
+function settings(){
+ return {col:+el('col').value,row:+el('row').value,direction:el('direction').value,seed:+el('seed').value,strength:+el('strength').value};
+}
+function setFields(p){for(const id of selectNames)el(id).value=p[id];drawPoint()}
+function drawPoint(){
+ const {col,row}=settings(),ctx=el('point').getContext('2d');
+ for(let y=0;y<12;y++)for(let x=0;x<16;x++){
+  const v=Math.round(255*Math.exp(-((col-x)**2+(row-y)**2)/8));ctx.fillStyle='rgb('+[v,v,v].join(',')+')';ctx.fillRect(10*x,10*y,10,10);
+ }
+ ctx.strokeStyle='#df842c';ctx.lineWidth=1.5;ctx.strokeRect(10*col+1,10*row+1,8,8);
+}
+function updateStatus(){
+ drawPoint();if(!busy)el('status').textContent='设置已就绪，点“生成六帧”计算。';
+}
+el('point').onclick=e=>{
+ if(busy)return;const bounds=el('point').getBoundingClientRect();
+ el('col').value=Math.max(0,Math.min(15,Math.floor(16*(e.clientX-bounds.left)/bounds.width)));
+ el('row').value=Math.max(0,Math.min(11,Math.floor(12*(e.clientY-bounds.top)/bounds.height)));updateStatus();
+};
+for(const id of selectNames)el(id).onchange=updateStatus;
+function paint(cv,frames,f){
+ const ctx=cv.getContext('2d'),image=ctx.createImageData(16,12);
+ for(let i=0;i<192;i++){const j=4*i,v=Math.round((frames[f*192+i]+1)*127.5);image.data[j]=image.data[j+1]=image.data[j+2]=v;image.data[j+3]=255}
+ ctx.putImageData(image,0,0);
+}
+function strip(id,frames){
+ const node=el(id);node.replaceChildren();
+ for(let f=0;f<6;f++){
+  const fig=document.createElement('figure'),cv=document.createElement('canvas'),cap=document.createElement('figcaption');
+  cv.width=16;cv.height=12;paint(cv,frames,f);cap.textContent='帧 '+f;fig.append(cv,cap);node.append(fig);
+ }
+}
+const label=p=>coord([p.col,p.row])+'，'+dirName(p.direction)+'，种子 '+p.seed+'，强度 '+p.strength;
+function screen(){
+ if(!current)return;const f=Number(el('frame').value);
+ paint(el('screen'),current.finished,f);el('screenLabel').textContent='帧 '+f+' · 中心 '+coord(current.track[f]);
+}
+function stop(){clearInterval(timer);timer=null;el('play').textContent='播放'}
+el('play').onclick=()=>{
+ if(timer!==null){stop();return}
+ timer=setInterval(()=>{el('frame').value=(Number(el('frame').value)+1)%6;screen()},300);el('play').textContent='暂停';
+};
+el('frame').oninput=()=>{stop();screen()};
+el('playback').ontoggle=()=>{if(!el('playback').open)stop()};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stop()});
+const dec=x=>x.toFixed(4).replace('-','−');
+function draft(){
+ if(!current)return;
+ const n=Number(el('step').value),state=current.states[n];el('number').value=n+' / 24';
+ strip('draft',n===24?current.finished:decodeFilm(model,state));
+ const k=Math.min(n,23),x=current.states[k][32],v=current.speeds[k][32];
+ el('equation').textContent=(n===24?'最后一次更新':'从第 '+n+' 步开始')+'，块 8 分量 0：'+dec(x)+' + ('+dec(v)+') / 24 ≈ '+dec(current.states[k+1][32])+'。';
+}
+el('step').oninput=draft;
+function display(result){
+ const old=current;current=result;const p=result.p;
+ if(old){
+  el('previous').hidden=false;el('previousTitle').textContent='上一段 · '+label(old.p);strip('previousFrames',old.finished);
+ }
+ el('currentTitle').textContent='这一次 · '+label(p);strip('currentFrames',result.finished);
+ const requested=Array.from({length:6},(_,f)=>[p.col+(p.direction==='right'?f:-f),p.row]);
+ const hits=result.track.filter((a,f)=>a[0]===requested[f][0]&&a[1]===requested[f][1]).length;
+ el('measure').textContent='实测中心 '+result.track.map(coord).join(' → ')+'。按每帧一格的目标路线，'+hits+' / 6 帧命中。';
+ if(requested.some(([x,y])=>x<1||x>14||y<1||y>10))el('measure').textContent+=' 这条路线有方块会超出画框。';
+ el('command').textContent='python3 flow_hint.py --device cpu --replay ../flow-hint/branch.pt --point '+p.col+' '+p.row+' --direction '+p.direction+' --strength '+p.strength+' --noise-seed '+p.seed+' --out replay/my-clip';
+ el('frame').value=0;el('step').value=12;el('results').hidden=false;el('see').hidden=false;el('move').hidden=p.row===7;screen();draft();
+}
+async function generate(){
+ if(busy)return;busy=true;stop();const p=settings();el('settings').disabled=true;el('progress').hidden=false;el('progress').value=0;
+ el('status').textContent='正在本机生成…';
+ try{
+  const run=prepare(model,p),states=[run.x],speeds=[];
+  for(let n=0;n<24;n++){
+   if(n%4===0)await new Promise(done=>setTimeout(done,0));
+   speeds.push(advance(model,run,n));states.push(run.x);el('progress').value=n+1;
+  }
+  const finished=decodeFilm(model,run.x);display({p,states,speeds,finished,track:centers(finished)});
+  el('status').textContent='已在本机完成 24 步，生成 6 帧。';
+ }catch(error){el('status').textContent='生成中断：'+error.message}
+ finally{busy=false;el('settings').disabled=false;el('progress').hidden=true}
+}
+el('generate').onclick=generate;
+el('move').onclick=()=>{if(!busy&&current){setFields({...current.p,row:7});generate()}};
+const methodNames={stop:"沿用 24 步网格",euler:"欧拉走完全程",midpoint:"中点走完全程"};
+let budgetResults=null;
+function showQuery(){
+ if(!budgetResults)return;
+ const result=budgetResults[el('which').value],i=Number(el('call').value)-1;
+ const [t,x,v]=result.queries[i];
+ el('query').textContent='第 '+(i+1)+' 次问速度：进度 '+dec(t)+'，查询位置 '+dec(x)+'，网络交出速度 '+dec(v)+'。';
+ const mid=result.mode==='midpoint',k=mid?Math.floor(i/2):i;
+ const x0=result.path[k],s=result.steps;
+ if(mid&&i%2===0){
+  el('accept').textContent='先估半步，得到试探位置 '+dec(x0)+' + ('+dec(v)+') / '+(2*s)+' ≈ '+dec(result.queries[i+1][1])+'。切到下一次查询，看这里的速度。';
+ }else{
+  el('accept').textContent='从本步起点更新：'+dec(x0)+' + ('+dec(v)+') / '+s+' ≈ '+dec(result.path[k+1])+'。';
+ }
+}
+function budgetRow(result,p){
+ const box=document.createElement('div'),title=document.createElement('h3'),frames=document.createElement('div'),line=document.createElement('p');
+ frames.className='film';frames.id='budget-'+result.mode;
+ title.textContent=methodNames[result.mode]+' · '+result.queries.length+' 次查询，'+result.updates+' 次更新，抵达 τ = '+Number(result.at.toFixed(4));
+ const hits=result.centers.filter(([x,y],f)=>x===p.col+(p.direction==='right'?f:-f)&&y===p.row).length;
+ line.className='note';line.textContent=(result.at<1?'中间草稿':'成片')+' · 中心命中 '+hits+'/6。'+result.centers.map(coord).join(' → ');
+ box.append(title,frames,line);el('rows').append(box);strip(frames.id,result.frames);
+}
+el('compare').onclick=async()=>{
+ const b=Number(el('allow').value),p=settings(),button=el('compare');
+ if(button.disabled)return;
+ button.disabled=true;el('allow').disabled=true;el('budgetStatus').textContent='正在从同一份噪声计算三条路径…';
+ try{
+  const results={};
+  for(const mode of Object.keys(methodNames)){
+   await new Promise(done=>setTimeout(done,0));results[mode]=budgetRun(model,p,b,mode);
+  }
+  el('rows').replaceChildren();budgetResults=results;
+  for(const row of Object.values(results))budgetRow(row,p);
+  el('call').replaceChildren(...Array.from({length:b},(_,i)=>new Option(i+1,i+1)));el('call').value=2;
+  el('which').value='midpoint';showQuery();el('budgetOutput').hidden=false;
+  el('budgetStatus').textContent='本次比较：'+label(p)+'。每种走法实际查询 '+b+' 次。';
+  el('budgetCmd').textContent='python3 solver_lab.py --sample --point '+p.col+' '+p.row+' --direction '+p.direction+' --noise-seed '+p.seed+' --strength '+p.strength+' --budget '+b+' --out replay/solver-sample';
+ }catch(e){el('budgetStatus').textContent='对照生成中断：'+e.message}
+ finally{button.disabled=false;el('allow').disabled=false}
+};
+el('which').onchange=showQuery;el('call').onchange=showQuery;
+async function openQuery(){
+ if(location.hash!=='#ask')return;
+ if(!budgetResults)await el('compare').onclick();
+ el('ask').scrollIntoView();
+}
+window.addEventListener('hashchange',openQuery);openQuery();
+const winNames={off:'全程关闭',early:'前段开启',late:'后段开启',full:'全程开启'};
+setOptions('winWidth',Array.from({length:25},(_,i)=>i),12);
+let winResults=null;
+function winRead(){
+ if(!winResults)return;
+ const k=Number(el('winStep').value)-1;el('winNumber').value=k+1;
+ const body=el('winTable').tBodies[0];body.replaceChildren();
+ for(const [mode,run] of Object.entries(winResults)){
+  const row=body.insertRow();
+  for(const value of [winNames[mode],run.scales[k],dec(run.path[k]),dec(run.speeds[k]),dec(run.path[k+1])])row.insertCell().textContent=value;
+ }
+}
+el('winStep').oninput=winRead;
+el('winRun').onclick=async()=>{
+ const btn=el('winRun'),w=+el('winWidth').value,p=settings();
+ const bounds={off:[0,0],early:[0,w],late:[24-w,24],full:[0,24]};
+ btn.disabled=true;el('winWidth').disabled=true;
+ try{
+  const records={};
+  for(const [key,range] of Object.entries(bounds)){
+   el('winStatus').textContent='正在本机生成'+winNames[key]+'的一排…';
+   await new Promise(resolve=>setTimeout(resolve,0));
+   records[key]=windowRun(model,p,...range);
+  }
+  el('winFilms').replaceChildren();
+  for(const [mode,run] of Object.entries(records)){
+   const title=document.createElement('h3'),film=document.createElement('div'),count=document.createElement('p'),band=document.createElement('div');
+   title.textContent=winNames[mode];band.className='winBand';band.setAttribute('aria-label','按生成步排列的控制强度');
+   for(const scale of run.scales){const cell=document.createElement('i');if(scale>0)cell.className='on';band.append(cell)}
+   film.className='film';film.id='window-'+mode;count.className='note';
+   const hits=run.centers.filter(([x,y],f)=>x===p.col+(p.direction==='right'?f:-f)&&y===p.row).length;
+   count.textContent='实测中心 '+run.centers.map(coord).join(' → ')+'，命中 '+hits+' / 6 帧。';
+   el('winFilms').append(title,band,film,count);strip(film.id,run.frames);
+  }
+  winResults=records;el('winStep').value=13;winRead();el('winResult').hidden=false;
+  el('winStatus').textContent='已生成四排。'+label(p)+'。青格表示对应更新使用了非零位置强度。';
+  el('winCmd').textContent='python3 control_window.py --sample --width '+w+' --point '+p.col+' '+p.row+' --direction '+p.direction+' --noise-seed '+p.seed+' --strength '+p.strength+' --out replay/my-window';
+ }catch(e){el('winStatus').textContent='计算中断：'+e.message}
+ finally{btn.disabled=false;el('winWidth').disabled=false}
+};
+drawPoint();
+</script></html>

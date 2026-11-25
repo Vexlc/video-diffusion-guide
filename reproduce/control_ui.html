@@ -1,0 +1,49 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>同一份雪花，两条相反的路线 · 实验 J</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f6ee;color:#193540;font:17px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:980px;margin:auto;padding:clamp(16px,4vw,48px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.25}h1{font-size:clamp(32px,6vw,54px);margin:.25em 0}h2{font-size:24px;margin:22px 0 8px}.k{color:#00695f;font-weight:700}p{margin:8px 0 15px}.actions{display:flex;align-items:end;flex-wrap:wrap;gap:12px}label{font-size:15px;font-weight:650}select,button{display:block;font:inherit;color:inherit;background:white;border:1px solid #96aaa2;padding:7px 10px;border-radius:5px;cursor:pointer}button{color:#005e55}#pair{font-size:15px}.board{padding:18px;background:#fff;border:1px solid #ccd8ce;border-radius:8px;margin-top:14px}.frames{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}.frames img{width:100%;image-rendering:pixelated;outline-offset:-3px}.frames img.active{outline:3px solid #eb9864}.label{display:block;color:#345650;font-size:14px;font-weight:700;margin:8px 0 4px}.player{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}input{accent-color:#00695f;max-width:48vw}.summary{border-left:4px solid #00695f;padding:8px 14px;background:#eef5ef}#detail{color:#445f65}figure{margin:14px 0 0}figcaption{font-size:14px;color:#496266}a{color:#00695f}.zoom{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:540px;gap:10px}.zoom img{width:100%;image-rendering:pixelated}.zoom span{display:block;font-size:14px}noscript{color:#993d29}
+</style></head><body><main><div class="k">从雪花到运动　/　实验 J</div><h1>同一份雪花，两条相反的路线</h1>
+<p>你能从一个起点猜出方块要往哪边走吗？先选“仅首帧”，再点“同一份雪花，反转任务”。然后改成“首尾两帧”，重复一次，留意哪一行开始改变。</p>
+__HINT_LINK__
+<noscript>逐帧操作需要启用 JavaScript。纸质图解见讲义第 34–37 页。</noscript>
+<div class="actions"><label>成对样本<select id="case"></select></label><label>条件支路<select id="mode">
+<option value="first">仅首帧</option><option value="ends" selected>首尾两帧</option><option value="dense">六帧都有点</option><option value="wrong">六帧都给反方向</option><option value="off">六帧点 · 关闭支路</option><option value="half">六帧点 · 强度 0.5</option><option value="double">六帧点 · 强度 2</option><option value="fine">六帧点 · 只留细尺度</option><option value="coarse">六帧点 · 只留粗尺度</option></select></label>
+<button id="pair">同一份雪花，反转任务</button></div>
+<div class="board"><div id="film"></div><div class="player"><button id="play">播放六帧</button><label>放大帧 <output id="which">0</output>　<input id="frame" type="range" min="0" max="5" value="0"></label></div><figure><div id="zoom" class="zoom"></div><figcaption>橙框标出当前电影帧。黑色提示帧表示这帧没有给坐标。提示里的白点只占一格，目标方块占九格。</figcaption></figure></div>
+<h2>换到全部 96 个任务，结果如何？</h2><p class="summary" id="score" aria-live="polite"></p><p id="detail"></p>
+<p>每组左右题共用初始噪声和起点。这里能切换预先固定的前四对，统计则包含全部 48 对。位置用最亮 3 × 3 窗口的中心来测，中间误差只算四个未必有提示的内帧。</p>
+</main><script>
+const data=__CONTROL_PAYLOAD__;
+const get=id=>document.getElementById(id);
+const labels=["原任务参考","送给支路的点","24 步生成"];
+let timer=null;
+for(let i=0;i<8;i++)get("case").add(new Option("第 "+(Math.floor(i/2)+1)+" 对 · 向"+(i%2?"右":"左"),i));
+function stop(){clearInterval(timer);timer=null;get("play").textContent="播放六帧"}
+function rows(){
+  const i=Number(get("case").value), mode=get("mode").value, f=data.frames;
+  const hints=f.guide[mode==="wrong"?(i^1):i].map((img,k)=>(mode==="first"&&k>0)||(mode==="ends"&&k!==0&&k!==5)?data.blank:img);
+  return [f.truth[i],hints,f[mode][i]];
+}
+function picture(src,label){const img=document.createElement("img");img.src=src;img.alt=label;return img}
+function frame(){
+  const k=Number(get("frame").value);get("which").textContent=k;get("zoom").replaceChildren();
+  rows().forEach((row,index)=>{
+    const group=document.createElement("div"), name=document.createElement("span");name.textContent=labels[index];group.append(name,picture(row[k],labels[index]+"第 "+k+" 帧"));get("zoom").append(group);
+  });
+  document.querySelectorAll(".frames").forEach(strip=>Array.from(strip.children).forEach((img,j)=>img.classList.toggle("active",j===k)));
+}
+function update(){
+  stop();get("film").replaceChildren();
+  rows().forEach((row,index)=>{
+    const name=document.createElement("span"),strip=document.createElement("div");name.className="label";name.textContent=labels[index];strip.className="frames";
+    row.forEach((src,k)=>strip.append(picture(src,labels[index]+"第 "+k+" 帧")));get("film").append(name,strip);
+  });
+  const mode=get("mode").value,s=data.scores[mode];
+  get("score").textContent="六帧全中原任务 "+s.exact+" / 96　·　六帧全中相反任务 "+s.opposite+" / 96　·　中间帧平均偏离原任务 "+s.middle_l1.toFixed(3)+" 格";
+  const details={first:"共用的首帧和噪声完全相同，两道相反任务得到相同输出。",ends:"只收到起点和终点。看中间四帧是否自己接成合理的路线。",wrong:"评分保留了原任务。即使输出忠实跟随错误路标，也会失去原任务的分。",off:"点仍然输入，但两个出口的系数都为零，生成结果与冻结基座逐像素一致。",fine:"只保留 12 × 16 特征上的修正。",coarse:"只保留 6 × 8 特征上的修正。"};
+  get("detail").textContent=details[mode]||"提示覆盖六帧。比较强度时，任务、噪声、采样步数和训练权重都相同。";frame();
+}
+get("case").onchange=update;get("mode").onchange=update;get("pair").onclick=()=>{get("case").value=Number(get("case").value)^1;update()};
+get("frame").oninput=()=>{stop();frame()};get("play").onclick=()=>{if(timer){stop();return}get("frame").value=0;frame();get("play").textContent="暂停";timer=setInterval(()=>{get("frame").value=Number(get("frame").value)+1;frame();if(Number(get("frame").value)===5)stop()},360)};
+update();
+</script></body></html>

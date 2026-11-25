@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>帧 2 从哪里借来一个数？ · 跨帧实验</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#1d3438;background:#edf1ed;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:1000px;margin:auto;padding:clamp(14px,4vw,45px)}header,section{padding:clamp(17px,3vw,29px);background:#fffcf5;margin-bottom:16px;border:1px solid #c6d6cb;border-radius:12px}header{border-top:6px solid #16766b}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.35;margin:6px 0 10px}h1{font-size:clamp(26px,5vw,43px)}h2{font-size:clamp(22px,3.8vw,30px)}p{margin:.5em 0}.kicker,small{color:#4a6263}.kicker{font-size:13px;font-weight:bold;letter-spacing:.08em}a{color:#065f55}nav,.controls{display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center}.controls{margin:12px 0}.controls label{display:flex;align-items:center;gap:5px}select,button,input{font:inherit;accent-color:#08685f}select,button{border:1px solid #a0bab0;background:#fff;border-radius:5px;padding:3px 7px;color:inherit}button{cursor:pointer}:focus-visible{outline:3px solid #bb5520;outline-offset:2px}output,.readout{font-variant-numeric:tabular-nums}.readout{background:#e6f2ec;border-left:4px solid #16766b;padding:8px 12px;overflow-wrap:anywhere}.tiles,.photos{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.photos{grid-template-columns:repeat(4,minmax(0,1fr))}figure{margin:5px 0;text-align:center;font-size:14px;min-width:0}canvas{display:block;width:100%;aspect-ratio:4/3;image-rendering:pixelated;border:2px solid transparent}.source canvas{border-color:#00685b}.source figcaption{color:#00685b;font-weight:bold}figcaption{line-height:1.4;margin-top:3px}.bars{display:grid;grid-template-columns:43px minmax(35px,1fr) 72px;align-items:center;gap:4px 8px;font-size:14px;font-variant-numeric:tabular-nums}.track{height:11px;border-radius:2px;background:#e5eae4}.bar{height:100%;background:#137568}.matrix{display:grid;grid-template-columns:22px repeat(6,minmax(0,1fr));gap:3px;text-align:center;max-width:580px;margin:14px auto;font-variant-numeric:tabular-nums;align-items:center}.matrix button{font-size:clamp(11px,2.8vw,15px);height:35px;padding:0;border-color:transparent}.matrix button[aria-pressed=true]{outline:2px solid #a3400e;outline-offset:0}.legend{font-size:14px;color:#405a5a}.gradient{display:inline-block;width:55px;height:10px;background:linear-gradient(90deg,#0d6793,#f7f7f7,#be4e1a)}code{overflow-wrap:anywhere}.tabs{margin-top:12px}input[type=range]{max-width:45vw}@media(max-width:600px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.photos{grid-template-columns:repeat(2,minmax(0,1fr))}.controls{gap:8px}.matrix{gap:2px}.matrix button{height:33px}}
+</style><body><main><header><div class="kicker">实验 I · 已训练的六帧网络</div><h1>帧 2 从哪里借来一个数？</h1>
+<p>固定影片、权重和噪声时刻。在六帧短片已经更新 12 次时，拆开第 13 次网络调用。先找一个数的来处，再测它能影响几帧。</p>
+<nav class="tabs"><a href="#routes">追踪通道</a><a href="#edit">改一个数</a><a href="#reach">换整帧</a>__BOOK__</nav></header>
+<section id="routes"><div class="kicker">一 · 追踪通道</div><h2>哪张特征图送进了这一帧？</h2>
+<p>把一个通道想成一层透明描图纸。移位会整层借来邻帧的纸，相同坐标上的数跟着一起过来。选中的通道和格子在六张纸上都能找到。</p>
+<div class="controls" id="flags"><strong>跨帧连接</strong><label><input type="checkbox" checked>入口之后</label><label><input type="checkbox" checked>低分辨率卷积前</label><label><input type="checkbox" checked>上采样后</label><button id="reset" type="button">回到书中例子</button></div>
+<div class="controls"><label>观察位置<select id="layer"><option value="0">入口之后</option><option value="1">低分辨率卷积前</option><option value="2">上采样后</option></select></label><label>接收帧<select id="frame"></select></label><label>通道<select id="channel"></select></label><label>行<select id="row"></select></label><label>列<select id="col"></select></label></div>
+<div class="tiles" id="tiles"></div><p class="legend"><span class="gradient"></span> 蓝为负、橙为正，白色接近 0。色标固定在 −1 到 +1，绿边标出来源，图内黑框标出取数位置。编号从 0 开始。</p>
+<p class="readout" id="address" aria-live="polite"></p></section>
+<section id="edit"><div class="kicker">二 · 浏览器实时计算</div><h2>把刚收到的一个数调大</h2><p>在移位完成之后，只改上面选中的那一格。把改动前后的特征分别送过余下的网络，每帧比较 192 个输出像素。</p>
+<div class="controls"><label for="delta">加到该格的数</label><input type="range" id="delta" min="-2" max="2" value="1" step=".25"><output id="deltaOut" for="delta"></output></div>
+<p id="edited" class="readout"></p><div class="bars" id="bars"></div><p class="legend">条长表示各帧预测 v̂ 的平均绝对变化。最长条按当前六个数的最大值缩放，可用右侧读数跨设置比较。试试把改动调到 0，或在最后一处交接改同样的数。</p></section>
+<section id="reach"><div class="kicker">三 · PyTorch 整帧替换记录</div><h2>替换一整帧，哪些输出会跟着变？</h2>
+<p>影片 A 保留原来的六帧。影片 B 只把其中一帧换为另一段影片在相同时刻的带噪帧。每一行都是一次独立替换，其他五帧逐像素相同。上方三个连接开关也会改变这张表。</p>
+<div class="controls"><label>矩阵显示<select id="mode"><option value="measured">实测变化 D</option><option value="structure">结构能否传到</option></select></label></div>
+<p class="legend">行号是替换的输入帧 j，列号是查看的输出帧 f。横线表示这次调用里没有连接路径。实测模式下绿色越深，预测变化越大；点击格子查看原数。</p>
+<div class="matrix" id="matrix" role="group" aria-label="整帧替换响应矩阵"></div><p class="readout" id="response" aria-live="polite"></p><div class="photos" id="photos"></div>
+<p class="legend">两幅输入图显示替换位置 j，两幅估计图显示观察位置 f。灰度图显示 ŷ = a·x − σ·v̂，黑白范围固定为 −1 到 +1。矩阵比较裁剪前的 v̂；预测改变多少与预测准不准是两个问题。</p>
+__HOME__</section></main>
+<script type="application/json" id="dataset">__DATA__</script><script>
+__OPS__
+__PREDICT__
+const data=JSON.parse(document.querySelector('#dataset').textContent), predict=makeTemporalNetwork(data);
+const get=id=>document.getElementById(id), flags=[...document.querySelectorAll('#flags input')];
+const taps=Object.fromEntries(Object.entries(data.taps).map(([k,t])=>[k,unpack(t)]));
+const runs=Object.fromEntries(Object.entries(data.runs).map(([k,t])=>[k,unpack(t).values]));
+const original=unpack(data.original).values, donor=unpack(data.donor).values, baselines={}, results={};
+let swapped=0, observed=3;
+function options(id,count,chosen){
+  const el=get(id);if(el.options.length!==count){el.replaceChildren(...Array.from({length:count},(_,i)=>new Option(i,i)))}
+  el.value=Math.min(chosen,count-1);
+}
+function heat(value,feature){
+  if(!feature){const g=Math.round(127.5*(1+Math.max(-1,Math.min(1,value))));return [g,g,g]}
+  const end=value<0?[13,103,147]:[190,78,26];return end.map(c=>Math.round(247+Math.min(1,Math.abs(value))*(c-247)));
+}
+function picture(parent,label,plane,w,h,{feature=false,mark=null,source=false}={}){
+  const fig=document.createElement('figure'), canvas=document.createElement('canvas'), caption=document.createElement('figcaption');
+  canvas.width=w*4;canvas.height=h*4;const ctx=canvas.getContext('2d');
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){ctx.fillStyle='rgb('+heat(plane[y*w+x],feature).join(',')+')';ctx.fillRect(x*4,y*4,4,4)}
+  if(mark){ctx.strokeStyle='#142521';ctx.lineWidth=1;ctx.strokeRect(4*mark[1]+.5,4*mark[0]+.5,3,3)}
+  if(source)fig.className='source';caption.textContent=label;fig.append(canvas,caption);parent.append(fig);
+}
+const signedNumber=(x,d=4)=>(x>=0?'+':'−')+Math.abs(x).toFixed(d);
+function key(){return flags.map(e=>Number(e.checked)).join('')}
+function settings(){
+  const mask=key(), l=get('layer').selectedIndex, tap=taps[mask.slice(0,l)], [,channels,h,w]=tap.shape, scale=l===2?2:1;
+  for(const [id,n] of [['channel',channels],['row',h*scale],['col',w*scale]])options(id,n,Number(get(id).value));
+  const f=+get('frame').value,c=+get('channel').value,r=+get('row').value,q=+get('col').value;
+  let origin=f;if(mask[l]==='1'&&c<channels/2)origin=c<channels/4?Math.max(0,f-1):Math.min(5,f+1);
+  function plane(frame){const start=(frame*channels+c)*w*h;return tap.values.subarray(start,start+w*h)}
+  const rr=Math.floor(r/scale),cc=Math.floor(q/scale);
+  return {mask,l,f,c,r,q,origin,plane,h,w,rr,cc,received:plane(origin)[rr*w+cc]};
+}
+function editView(s){
+  const {mask,l,f,c,r,q,received}=s, d=+get('delta').value;get('deltaOut').textContent=signedNumber(d,2);
+  get('edited').textContent='帧 '+f+' 的通道 '+c+'，收到 '+signedNumber(received)+'，改后 '+signedNumber(received+d)+'。';
+  const base=baselines[mask]||(baselines[mask]=predict(mask).values);
+  const edited=d===0?base:predict(mask,[l,f,c,r,q,d]).values;
+  const means=Array.from({length:6},(_,i)=>{let sum=0;for(let p=i*192;p<(i+1)*192;p++)sum+=Math.abs(base[p]-edited[p]);return sum/192});
+  const bars=get('bars');bars.replaceChildren();
+  for(const [i,m] of means.entries()){
+    const label=document.createElement('span'),track=document.createElement('div'),bar=document.createElement('div'),number=document.createElement('output');
+    label.textContent='帧 '+i;track.className='track';bar.className='bar';bar.style.width=100*m/(Math.max(...means)||1)+'%';
+    number.textContent=m.toFixed(6);track.append(bar);bars.append(label,track,number);
+  }
+}
+function wholeView(){
+  const mask=key(),hops=[...mask].filter(bit=>bit==='1').length, run=runs[mask];
+  const table=results[mask]||(results[mask]=Array.from({length:6},(_,j)=>Array.from({length:6},(_,f)=>{
+    let sum=0;for(let p=f*192;p<(f+1)*192;p++)sum+=Math.abs(run[(j+1)*1152+p]-run[p]);return sum/192})));
+  const matrix=get('matrix'), structural=get('mode').value==='structure';matrix.replaceChildren();
+  for(const label of ['j／f',0,1,2,3,4,5]){const el=document.createElement('small');el.textContent=label;matrix.append(el)}
+  for(let j=0;j<6;j++){
+    const label=document.createElement('small');label.textContent=j;matrix.append(label);
+    for(let f=0;f<6;f++){
+      const m=table[j][f], possible=Math.abs(j-f)<=hops, b=document.createElement('button'), weight=Math.min(1,Math.log1p(100*m)/Math.log(101));
+      b.textContent=!possible?'—':structural?'可达':m.toFixed(3);
+      const rgb=[6,105,93].map(c=>Math.round(245+(c-245)*weight));
+      b.style.backgroundColor=!possible?'#e8ebe8':structural?'#bbdbcc':'rgb('+rgb.join(',')+')';
+      if(!structural&&possible){
+        const linear=rgb.map(byte=>{const s=byte/255;return s<=.04045?s/12.92:((s+.055)/1.055)**2.4});
+        const light=.2126*linear[0]+.7152*linear[1]+.0722*linear[2];
+        b.style.color=light>.179?'#000':'#fff';
+      }
+      b.setAttribute('aria-label','替换输入帧 '+j+'，观察输出帧 '+f+'，'+(possible?'可达':'无路')+'，实测 '+m.toFixed(6));
+      b.setAttribute('aria-pressed',j===swapped&&f===observed);b.onclick=()=>{swapped=j;observed=f;wholeView();get('matrix').querySelector('[aria-pressed=true]').focus({preventScroll:true})};matrix.append(b);
+    }
+  }
+  const j=swapped,f=observed, possible=Math.abs(j-f)<=hops;
+  get('response').textContent='开关 '+mask+' · 换帧 '+j+' → 看帧 '+f+'。'+(possible?'结构上可达':'结构上无路')+'，192 个预测值平均改变 '+table[j][f].toFixed(6)+'。';
+  const photos=get('photos');photos.replaceChildren();
+  for(const [label,arr] of [['A 输入 · 帧 '+j,original],['B 换入 · 帧 '+j,donor]])picture(photos,label,arr.subarray(j*192,(j+1)*192),16,12);
+  for(const [label,x,batch] of [['A 猜的干净帧 '+f,original,0],['B 猜的干净帧 '+f,j===f?donor:original,j+1]]){
+    const plane=Array.from({length:192},(_,p)=>data.a*x[f*192+p]-data.sigma*run[(batch*6+f)*192+p]);
+    picture(photos,label,plane,16,12);
+  }
+}
+function showRoutes(){
+  const s=settings(), box=get('tiles');box.replaceChildren();
+  for(let f=0;f<6;f++)picture(box,'帧 '+f+(f===s.origin?' · 来源':'')+' '+signedNumber(s.plane(f)[s.rr*s.w+s.cc]),s.plane(f),s.w,s.h,{feature:true,mark:[s.rr,s.cc],source:f===s.origin});
+  get('address').textContent='开关 '+s.mask+' · 帧 '+s.f+' 通道 '+s.c+' 的 ('+s.r+', '+s.q+') 收到帧 '+s.origin+' 的 '+signedNumber(s.received)+'。移位前本帧这一格是 '+signedNumber(s.plane(s.f)[s.rr*s.w+s.cc])+'。'+(s.l===2?'上采样复制相邻格，图中标出放大前的 ('+s.rr+', '+s.cc+')。':'');
+  editView(s);
+}
+function reset(){flags.forEach(e=>e.checked=true);get('layer').selectedIndex=0;options('frame',6,2);options('channel',16,2);options('row',12,5);options('col',16,7);get('delta').value=1;get('mode').value='measured';swapped=0;observed=3;showRoutes();wholeView()}
+flags.forEach(e=>e.onchange=()=>{showRoutes();wholeView()});
+for(const id of ['layer','frame','channel','row','col'])get(id).onchange=showRoutes;
+get('delta').oninput=()=>editView(settings());get('mode').onchange=wholeView;get('reset').onclick=reset;reset();
+</script></body></html>

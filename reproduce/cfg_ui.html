@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>同一个球，两种控制 · ControlVideo 实测</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f5ef;color:#213b3d;font:17px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:1040px;margin:auto;padding:clamp(16px,4vw,46px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.35}h1{font-size:clamp(32px,5vw,52px);margin:.3em 0}h2{font-size:clamp(22px,3vw,29px);margin:0 0 .4em}p{margin:.55em 0}nav,.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px}a{color:#076359;text-underline-offset:3px}nav{font-size:15px;margin-bottom:26px}section{background:#fffefa;margin:20px 0;padding:clamp(14px,3vw,28px);border:1px solid #c8d8d2;border-radius:8px}.controls{margin:14px 0}.controls label{display:inline-flex;align-items:center;gap:7px;max-width:100%;flex-wrap:wrap}input,button,select{accent-color:#00665b;font:inherit}button,select,input[type=number]{border:1px solid #8ba59d;border-radius:4px;background:#fff;color:#183e39;padding:5px 8px;max-width:100%}button{cursor:pointer}button:focus-visible,select:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #bd6739;outline-offset:2px}.films,.heat{display:grid;gap:12px;grid-template-columns:1fr 1fr .78fr}.heat{grid-template-columns:repeat(5,minmax(0,1fr))}figure{margin:0;min-width:0}figcaption{font-size:15px;font-weight:650;margin-bottom:4px}figure img{width:100%;height:auto;display:block;aspect-ratio:4/3}canvas{width:100%;display:block;image-rendering:pixelated;cursor:crosshair}small,.note{color:#445e60;font-size:15px}.metric{border-left:3px solid #a94c28;background:#fbf3e7;padding:8px 12px}.math{background:#eaf4ef;padding:12px 16px;border-left:3px solid #217260;overflow-wrap:anywhere}.read{font-variant-numeric:tabular-nums}code{font-size:15px;overflow-wrap:anywhere}summary{cursor:pointer;color:#075e52}output{font-variant-numeric:tabular-nums}details{margin-top:12px}.heat figure output{font-size:15px}.heat figure[hidden]{display:none}input[type=number]{width:70px}.films img{border-radius:3px}
+@media(max-width:640px){.films{grid-template-columns:repeat(2,minmax(0,1fr))}.films figure:last-child{max-width:128px}.heat{grid-template-columns:repeat(2,minmax(0,1fr))}section{padding:13px}nav{margin-bottom:12px}.controls{gap:10px}.controls select{font-size:16px}.read{font-size:16px}}
+</style>
+<main>__NAV__<h1>同一个球，两种控制</h1>
+<p>文字要求“浅蓝桌面上的一个橙色橡胶球”。五张深度图给出球从左向右的位置。先看成片，再追踪第一步里的一个数。</p>
+<section id="films"><h2>只改一项，球会怎样变？</h2>
+<div class="controls"><label>对照 <select id="pair"></select></label></div>
+<div class="films"><figure><figcaption id="ta"></figcaption><img id="fa" alt="A 组生成的当前帧"></figure><figure><figcaption id="tb"></figcaption><img id="fb" alt="B 组生成的当前帧"></figure><figure><figcaption>同帧深度条件</figcaption><img id="hint" alt="给模型的深度图，近处亮，远处暗"></figure></div>
+<div class="controls"><button id="play" type="button">播放五帧</button><label>影片帧 <input id="frame" type="range" min="0" step="1" value="2"><output id="frameText"></output></label></div>
+<p class="metric" id="score"></p><p id="interpret"></p>
+<details><summary>这次采样固定了什么？</summary><p id="fixed"></p><p>正面提示 <span id="positive"></span></p><p>默认参照 <span id="negative"></span>。选择“把负面提示换成空文字”时，只有 B 组把这个字符串清空。</p></details></section>
+<section id="prediction"><h2>一次预测里，两个系数各乘在哪里？</h2><p>先把采样步停在 0。λ 乘在输入 U-Net 的深度修正上。U-Net 据此预测噪声，w 随后放大两份噪声预测之差。点热图或输入列、行，可以读同一位置的数。</p>
+<div class="controls"><label>读取 <select id="branch"><option value="a">A 组</option><option value="b" selected>B 组</option></select></label><label>采样步 <select id="step"></select></label><label>列 <input id="col" type="number" value="16" min="0"></label><label>行 <input id="row" type="number" min="0" value="12"></label></div>
+<p id="state" class="note"></p><div class="heat" id="plots"></div>
+<p class="note">蓝色为负，橙色为正。参照、正面、实收三图共用 ±2 的色阶。为了看清小差值，文字差 Δ = 正面 − 参照用 ±0.08，颜色放大 25 倍。隐藏修正单独用 ±0.12。超过色阶边界的格子用端点颜色显示。数值保留原始精度。</p>
+<p id="formula" class="math read"></p><p id="scope"></p>
+<details><summary>在本地 Python 核对这一格</summary><p>解压离线包，进入 reproduce 目录运行，只用 Python 标准库。如果读取自己的录像，在命令末尾加上 <code>--record 路径/cfg.json</code>。</p><code id="command"></code><p>采集时另外核对送入 DDIM 的完整四通道张量。这里保存了三个采样步、五帧的通道 0，潜网格中的一个数要经过后续更新和解码才会影响最终画面。</p></details>
+</section><p><a href="https://arxiv.org/abs/2207.12598">CFG 论文</a>　<a href="https://arxiv.org/abs/2302.05543">ControlNet 论文</a>　<a href="https://github.com/YBYBZhang/ControlVideo/blob/4eac95f722bad014bbd42932795a33212ed417a1/models/pipeline_controlvideo.py#L895-L925">作者采样循环</a></p></main>
+<script id="record" type="application/json">__DATA__</script>
+<script>
+"use strict";
+const data=JSON.parse(document.getElementById("record").textContent);
+const el=id=>document.getElementById(id);
+const [frames,height,width]=data.plane_shape;
+const fields={residual:"深度修正 λr",ref:"参照预测",pos:"正面预测",delta:"文字差 Δ（放大）",actual:"采样器实收"};
+const cache=new Map();
+const pairSelect=el("pair"), stepSelect=el("step");
+data.pairs.forEach((p,i)=>pairSelect.add(new Option(p.label,i)));
+data.runs[data.pairs[0].a].samples.forEach((s,i)=>stepSelect.add(new Option(String(s.n),i)));
+el("frame").max=frames-1;el("row").max=height-1;el("col").max=width-1;
+el("positive").textContent=data.prompt;el("negative").textContent=data.negative;
+el("fixed").textContent="所有组使用种子 "+data.seed+"，共 "+frames+" 帧，每帧 "+data.size.join(" × ")+" 像素。每次生成用同一份初始噪声，帧间也共享初始空间噪声。运行 "+data.steps+" 步 DDIM，η = 0，关闭插帧。每幅成片按 8 位 RGB 无损记录。";
+function decodeHalf(bits){
+ const sign=(bits&0x8000)?-1:1, exponent=(bits>>10)&31, fraction=bits&1023;
+ if(exponent===31)return fraction?NaN:sign*Infinity;
+ return exponent===0?sign*fraction*2**-24:sign*(1+fraction/1024)*2**(exponent-15);
+}
+function plane(key,sample,field){
+ const id=key+"/"+sample.n+"/"+field;
+ if(!cache.has(id)){
+  const raw=atob(sample[field]), out=new Float32Array(raw.length/2);
+  for(let i=0;i<out.length;i++)out[i]=decodeHalf(raw.charCodeAt(2*i)|(raw.charCodeAt(2*i+1)<<8));
+  cache.set(id,out);
+ }
+ return cache.get(id);
+}
+function draw(canvas,values,f,x,y,limit){
+ const ctx=canvas.getContext("2d"), cell=8;
+ for(let r=0;r<height;r++)for(let c=0;c<width;c++){
+  const v=values[(f*height+r)*width+c], end=v<0?[39,101,158]:[201,87,33], a=Math.min(1,Math.abs(v)/limit);
+  ctx.fillStyle="rgb("+end.map(k=>Math.round(249+(k-249)*a)).join(",")+")";
+  ctx.fillRect(c*cell,r*cell,cell,cell);
+ }
+ ctx.strokeStyle="#1b2225";ctx.lineWidth=2;ctx.strokeRect(x*cell+1,y*cell+1,cell-2,cell-2);
+}
+for(const [field,label] of Object.entries(fields)){
+ const fig=document.createElement("figure");fig.id="fig-"+field;
+ const title=document.createElement("figcaption");title.textContent=label;
+ const canvas=document.createElement("canvas");canvas.id="heat-"+field;canvas.width=width*8;canvas.height=height*8;
+ canvas.setAttribute("aria-label",label+"热图；可使用列、行输入框选格");
+ const out=document.createElement("output");out.id="val-"+field;
+ canvas.addEventListener("click",event=>{
+  const rect=canvas.getBoundingClientRect();
+  el("col").value=Math.min(width-1,Math.max(0,Math.floor((event.clientX-rect.left)/rect.width*width)));
+  el("row").value=Math.min(height-1,Math.max(0,Math.floor((event.clientY-rect.top)/rect.height*height)));
+  update();
+ });
+ fig.append(title,canvas,out);el("plots").append(fig);
+}
+const insights=[
+ "深度对两组都生效。盯住深度图中最亮的圆，比较相同区域里球的颜色、大小和它身后的桌面。",
+ "深度修正为零。两组仍然收到相同的文字。数一数每张图里有几个球，再读画面下方的差异。",
+ "文字外推固定在 2。给 U-Net 加上深度修正后，观察中央的球与深度亮斑的位置。",
+ "文字外推固定在 7.5。播放两组，留意亮斑向右移动时橙球如何跟随。",
+ "这一版作者代码在 w ≤ 1 时直接使用正面预测。0 和 1 都走同一条路径，可以逐帧检验。",
+ "正面文字、深度、初始噪声全部相同。第一步的参照预测随参照文字而变，采样器随后收到不同的数。"
+];
+const fmt=v=>Number(v.toFixed(7)).toString().replace("-","−");
+function getInt(id,upper){
+ const val=el(id).valueAsNumber;
+ return Number.isFinite(val)?Math.max(0,Math.min(upper,Math.trunc(val))):0;
+}
+function update(){
+ const i=Number(pairSelect.value), p=data.pairs[i], side=el("branch").value, key=p[side], run=data.runs[key];
+ const f=Number(el("frame").value), index=Number(stepSelect.value), sample=run.samples[index];
+ const col=getInt("col",width-1), row=getInt("row",height-1);
+ for(const k of ["a","b"]){
+  const r=data.runs[p[k]];el("t"+k).textContent=k.toUpperCase()+"　w = "+r.w+"，λ = "+r.scale+(i===5?(r.reference?" · 负面文字":" · 空文字"):"");
+  el("f"+k).src=r.film[f];
+ }
+ el("hint").src=data.maps[f];el("frameText").textContent=f+" / "+(frames-1);
+ const stats=p.scores[f];el("score").textContent="帧 "+f+"　两组成片有 "+stats.changed.toLocaleString("zh-CN")+" / "+(data.size[0]*data.size[1]).toLocaleString("zh-CN")+" 个像素发生变化。每个 RGB 通道平均相差 "+stats.mae.toFixed(2)+" 级（满量程 255）。";
+ el("interpret").textContent=insights[i];
+ const same=data.runs[p.a].samples[index].state_sha256===data.runs[p.b].samples[index].state_sha256;
+ el("state").textContent="步号 "+sample.n+"，模型噪声级 "+sample.tick+"。A、B 在这一步的带噪输入"+(same?"逐字节相同，可以在同一状态比较预测。":"已经不同。此处对比包含前面各步积累的影响。");
+ const values={};
+ for(const name of Object.keys(fields)){
+  el("fig-"+name).hidden=!(name in sample);
+  if(!(name in sample))continue;
+  const arr=plane(key,sample,name), v=arr[(f*height+row)*width+col]; values[name]=v;
+  draw(el("heat-"+name),arr,f,col,row,name==="residual"?.12:name==="delta"?.08:2);
+  el("val-"+name).textContent=fmt(v);
+ }
+ el("formula").textContent=sample.batch===2?"参照 + w × (正面 − 参照)　"+fmt(values.ref)+" + "+run.w+" × ("+fmt(values.pos)+" − ("+fmt(values.ref)+")) ≈ "+fmt(values.actual):
+  "只算正面预测　"+fmt(values.pos)+" → DDIM 实收 "+fmt(values.actual);
+ el("scope").textContent=sample.batch===2?"这格的文字差 Δ = "+fmt(values.delta)+"。w 只乘这份差，再加回参照预测。实收值按模型的半精度运算逐步舍入，显示读数保留至多七位小数。":"作者在这个设置只计算一个文字分支，所以本步没有参照预测。即使输入了负面提示，采样器也只收到正面结果。";
+ el("command").textContent="python3 cfg_report.py --case "+key+" --step "+sample.n+" --frame "+f+" --col "+col+" --row "+row;
+}
+let timer=null;
+function stop(){clearInterval(timer);timer=null;el("play").textContent="播放五帧";}
+el("play").addEventListener("click",()=>{
+ if(timer!==null){stop();return}
+ if(+el("frame").value===frames-1)el("frame").value=0;
+ el("play").textContent="暂停";update();
+ timer=setInterval(()=>{el("frame").value=+el("frame").value+1;update();if(+el("frame").value>=frames-1)stop()},330);
+});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stop()});
+for(const name of ["pair","frame","branch","step","col","row"]){
+ el(name).addEventListener("input",()=>{if(name==="frame")stop();update()});
+ if(name==="col"||name==="row")el(name).addEventListener("change",()=>{el(name).value=getInt(name,+el(name).max);update()});
+}
+update();
+</script></html>

@@ -1,0 +1,77 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>同一格雪花的两种来历 · 从雪花到运动</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#edf2ed;color:#193540;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:990px;margin:auto;padding:clamp(12px,3vw,36px)}header,section{background:#fffdf7;border:1px solid #c7d7cf;border-radius:10px;padding:clamp(16px,3vw,28px);margin-bottom:16px}header{border-top:6px solid #07685f}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.35;margin:4px 0 10px}h1{font-size:clamp(28px,5vw,43px)}h2{font-size:clamp(21px,3.4vw,29px)}p{margin:7px 0}a{color:#00665c}.tag,.note,small{color:#465e60}.tag{font-weight:700;font-size:13px}.controls,.nav{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:10px 0}.controls label{display:flex;align-items:center;gap:5px}input,select,button{font:inherit;accent-color:#07685f}input[type=range]{width:125px}.controls button,select{border:1px solid #8aa69d;background:white;border-radius:5px;color:inherit;padding:3px 7px}button,summary{cursor:pointer}:focus-visible{outline:3px solid #a54a2a;outline-offset:2px}.result{background:#e8f2ed;border-left:4px solid #07685f;padding:9px 12px;font-variant-numeric:tabular-nums}.call{background:#f4efe3;border-left-color:#aa4e2f}output,b{font-variant-numeric:tabular-nums}.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{padding:11px;background:#f1f4ed}.card span,.card small{display:block}.card b{font-size:19px}.track{height:10px;background:#d5dfd9;margin:5px 0}.fill{display:block;height:100%;background:#00695f}.other .fill{background:#ad492c}.math{font-family:"DejaVu Sans Mono",monospace;font-size:.93em}.note{font-size:14px}details{margin:10px 0}summary{color:#065e56;font-weight:bold}.plot,details svg{display:block;width:100%;max-width:720px;height:auto;margin:8px auto}.plot text{font-family:inherit;font-size:12px;fill:#425857}.windows{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.windows div{padding:8px 10px;background:#f2f4ee}.windows span,.windows b{display:block}.windows b{font-size:21px}.controls label.disabled{color:#6c7471}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #dce4df;text-align:left;padding:4px 8px}
+@media(max-width:560px){.controls{gap:7px}.cards{gap:5px}.card{padding:8px}.windows{grid-template-columns:1fr}.windows div{display:flex;align-items:baseline;justify-content:space-between}.plot text{font-size:15px}input[type=range]{width:104px}.cards .math{font-size:13px}details svg{min-width:490px}.wide{overflow-x:auto}}
+</style></head><body><main><header><div class="tag">公式练习 N · 第 8、12 页</div><h1>同一格雪花的两种来历</h1>
+<p>从小车图里抽一个部位，车身和背景各有一半机会。车身原本是 +0.80，背景原本是 −0.55。每次都把真值乘 0.8，再加上 0.6 倍的标准高斯噪声。现在你只看到带噪结果，能把两种解释各信几分？</p>
+<nav class="nav"><a href="#evidence">找来源</a><a href="#training">翻出题记录</a><a href="#score">看密度斜率</a><a href="index.html">三种预测头</a></nav></header>
+<section id="evidence"><div class="tag">一 · 从观察到猜测</div><h2>先固定一格，再决定看不看邻帧</h2>
+<div class="controls"><label>本帧读数 x <input id="x" type="range" min="-150" max="150" value="4"><output id="xOut" for="x"></output></label>
+<label>邻帧关系 <select id="mode"><option value="hidden">遮住邻帧</option><option value="shared">跟踪同一部位</option><option value="independent">两帧独立抽部位</option></select></label>
+<label id="neighborLabel">邻帧读数 <input id="neighbor" type="range" min="-150" max="150" value="64"><output id="neighborOut" for="neighbor"></output></label><button id="reset">恢复例题</button></div>
+<p class="note" id="rule"></p><div class="cards"><div class="card"><b>原本是车身</b><span id="bodyZ" class="math"></span><div class="track"><i class="fill" id="bodyBar"></i></div><output id="bodyP"></output></div>
+<div class="card other"><b>原本是背景</b><span id="backZ" class="math"></span><div class="track"><i class="fill" id="backBar"></i></div><output id="backP"></output></div></div>
+<p id="mean" class="result" aria-live="polite"></p>
+<div class="controls"><label>这次统一猜噪声为 <select id="guess"><option value="mean">加权平均</option><option value="body">车身那道题的标签</option><option value="back">背景那道题的标签</option><option value="zero">零</option><option value="lesson">−0.7（第 8 页）</option></select></label></div><p class="result call" id="loss"></p>
+<details><summary>权重怎样从高斯噪声算出来？</summary><p>先假设是车身，根据 z = (x − 0.8y) / 0.6 算出这道题必须加多少噪声；对背景也算一次。标准正态分布抽到某个值附近的相对可能性是 exp(−z²/2)。把每类原有的概率乘以这个数，再除以两项之和。</p><p id="likelihood" class="math"></p><p>跟踪同一部位时，两帧共享车身或背景的身份，分别抽噪声，要把两帧的似然相乘。独立抽部位时，邻帧那一项对本帧两类都是同一因子，归一化后抵消。</p></details>
+<details><summary>看讲义的两条固定配方（x = 0.04，仅看本帧）</summary><div class="wide">__SCENE__</div></details>
+</section><section id="training"><div class="tag">二 · 独立出题核对</div><h2>把相似的训练题放在一起，标签平均是多少？</h2>
+<p>程序先抽干净部位和噪声，写下每题的真实噪声，再按屏幕上可见的读数筛题。连续读数很难恰好相等，所以保留观测落在目标左右各 0.10 的题。打开邻帧时要两格都入窗。</p>
+<div class="controls"><label>查看前 <select id="count"><option>4096</option><option>16384</option><option selected>65536</option></select> 道题</label></div>
+<div class="windows"><div><span>实际入窗</span><b id="kept"></b></div><div><span>样本平均噪声</span><b id="sampleMean"></b></div><div><span>同一窗口理论平均</span><b id="windowMean"></b></div></div>
+<p id="counts" class="note"></p><p>对照实验可先增加题数，再切换“跟踪同一部位”和“两帧独立抽部位”。上节按精确读数计算；这一节的理论值对整个窗口积分。有限样本还会有抽样波动。</p></section>
+<section id="score"><div class="tag">三 · 第 12 页选读</div><h2>把噪声猜测画成一条曲线的斜率</h2><p>横轴是本帧可能看到的带噪值。两种干净来源各产生一条钟形密度，按当前线索相加，再取自然对数，就得到图中的曲线。黑点标出你选的读数，黑短线沿着这点的切线。</p>
+<div class="controls" aria-label="复算第 12 页"><button data-neighbor="64">看书中左图 · 邻帧 +0.64</button><button data-neighbor="-44">看书中右图 · 邻帧 −0.44</button><a href="#evidence">调整其他读数</a></div>
+<svg id="chart" class="plot" viewBox="0 0 480 198" role="img" aria-label="带噪读数的对数密度曲线与所选读数处的切线"></svg><p id="slope" class="result"></p>
+<p class="note">差分核对用 [log p(x + 0.0001) − log p(x − 0.0001)] / 0.0002。改邻帧只改条件，求斜率时固定这个条件。score 是当前分布的局部信息，执行一次去噪还要用对应的采样公式。</p></section></main><script>
+__MATH__
+const el=id=>document.getElementById(id);
+const show=(v,n=3)=>v===null?'无样本':(Math.abs(v)<.5*10**(-n)?0:v).toFixed(n).replace('-','−');
+const set=trainingSet(65536);
+function chart(x,mode,n,answer){
+  const left=47,right=459,top=17,bottom=145,lo=-1.65,hi=1.65;
+  const logp=v=>Math.log(estimate(v,mode,n).density);
+  const floor=Math.min(-2,Math.floor(Math.min(logp(lo),logp(hi))));
+  const px=v=>left+(v-lo)/(hi-lo)*(right-left),py=v=>top+(v/floor)*(bottom-top);
+  let svg='';
+  for(let y=0;y>=floor;y--){svg+='<line x1="'+left+'" x2="'+right+'" y1="'+py(y)+'" y2="'+py(y)+'" stroke="#c3d1c9" stroke-dasharray="3 3"/><text x="37" y="'+(py(y)+4)+'" text-anchor="end">'+y+'</text>'}
+  for(const t of [-1.5,-1,-.5,0,.5,1,1.5]){svg+='<text x="'+px(t)+'" y="165" text-anchor="middle">'+t+'</text>'}
+  const points=Array.from({length:181},(_,i)=>{const t=lo+(hi-lo)*i/180;return px(t)+','+py(logp(t))}).join(' ');
+  const lp=logp(x),l=Math.max(lo,x-.25),r=Math.min(hi,x+.25);
+  svg+='<polyline points="'+points+'" stroke="#00695f" stroke-width="3" fill="none"/><line x1="'+px(x)+'" x2="'+px(x)+'" y1="'+py(lp)+'" y2="'+bottom+'" stroke="#5a6968" stroke-dasharray="3 3"/>';
+  svg+='<line x1="'+px(l)+'" y1="'+py(lp+(l-x)*answer.score)+'" x2="'+px(r)+'" y2="'+py(lp+(r-x)*answer.score)+'" stroke="#193540" stroke-width="3"/><circle cx="'+px(x)+'" cy="'+py(lp)+'" r="4" fill="#193540"/><text x="251" y="190" text-anchor="middle">带噪读数 x</text><text x="48" y="13">log p</text>';
+  el('chart').innerHTML=svg;
+}
+function render(){
+  const x=+el('x').value/100,n=+el('neighbor').value/100,mode=el('mode').value,answer=estimate(x,mode,n);
+  const zb=noiseFor(x,bodyValue),zr=noiseFor(x,backgroundValue),p=answer.body;
+  el('xOut').value=show(x,2);el('neighborOut').value=mode==='hidden'?'遮住':show(n,2);
+  el('neighbor').disabled=mode==='hidden';el('neighborLabel').classList.toggle('disabled',mode==='hidden');
+  el('rule').textContent={hidden:'只看到本帧的一格。计算两种来源时，出题前各占一半。',shared:'两帧跟踪同一块车身或背景。部位的身份相同，每帧的噪声独立抽取。',independent:'两帧的部位身份和噪声都独立抽取。可以看到邻帧，但它没有透露本帧的身份。'}[mode];
+  for(const [prefix,z,weight] of [['body',zb,p],['back',zr,1-p]]){
+    el(prefix+'Z').textContent='需要的噪声 '+show(z);el(prefix+'Bar').style.width=(weight*100)+'%';
+    el(prefix+'P').value='现有线索下 '+show(weight*100,1)+'%';
+  }
+  el('mean').textContent='按权重平均，猜噪声 ε̂ = '+show(answer.noise,4)+'。代回 (x − 0.6ε̂) / 0.8，猜干净值 ŷ = '+show(answer.clean,4)+'。两类题共享这个答案。';
+  const guess={mean:answer.noise,body:zb,back:zr,zero:0,lesson:-.7}[el('guess').value];
+  const risk=p*(guess-zb)**2+(1-p)*(guess-zr)**2;
+  el('loss').textContent='猜 '+show(guess,4)+'，两类题的加权平方损失为 '+show(risk,4)+'；这组线索下最低为 '+show(answer.loss,4)+'。只要两种标签都还有可能，最低损失就大于零。';
+  const weight=(z,y)=>Math.exp(-z*z/2)*(mode==='shared'?Math.exp(-.5*noiseFor(n,y)**2):1);
+  const b=weight(zb,bodyValue),d=weight(zr,backgroundValue);
+  el('likelihood').textContent='省去相同因子，车身 '+show(b,5)+'，背景 '+show(d,5)+'。车身所占比例 = '+show(b,5)+' / ('+show(b,5)+' + '+show(d,5)+')。';
+  const empirical=sampleWindow(set,+el('count').value,x,mode,n),theory=windowExpected(x,mode,n);
+  el('kept').textContent=empirical.kept;el('sampleMean').textContent=show(empirical.noise,4);el('windowMean').textContent=show(theory.noise,4);
+  el('counts').textContent='固定种子 539。入窗题中 '+empirical.body_count+' 道来自车身，'+(empirical.kept-empirical.body_count)+' 道来自背景。';
+  chart(x,mode,n,answer);
+  const h=.0001,slope=(Math.log(estimate(x+h,mode,n).density)-Math.log(estimate(x-h,mode,n).density))/(2*h);
+  el('slope').textContent='从噪声答案计算 −ε̂ / 0.6 = '+show(answer.score,5)+'。独立取曲线左右两点算斜率，得到 '+show(slope,5)+'。';
+}
+for(const id of ['x','neighbor'])el(id).oninput=render;
+for(const id of ['mode','guess','count'])el(id).onchange=render;
+el('reset').onclick=()=>{el('x').value=4;el('neighbor').value=64;el('mode').value='hidden';el('guess').value='mean';el('count').value='65536';render()};
+for(const b of document.querySelectorAll('[data-neighbor]'))b.onclick=()=>{
+  el('x').value=4;el('neighbor').value=b.dataset.neighbor;el('mode').value='shared';render();
+};
+if(location.hash==='#score')el('mode').value='shared';
+render();
+</script></body></html>

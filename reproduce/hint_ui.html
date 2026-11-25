@@ -1,0 +1,117 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>挪一个提示点 · ControlNet 单步实验</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#19393c;background:#f1f3ed;font:17px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:990px;margin:auto;padding:clamp(14px,4vw,42px)}h1,h2{font:700 clamp(28px,5vw,46px)/1.25 "Noto Serif CJK SC",serif;margin:.3em 0}h2{font-size:clamp(22px,3vw,28px)}p{margin:.65em 0}section{margin:22px 0;padding:clamp(13px,3vw,24px);border-top:3px solid #006b5f;background:white}header p{max-width:760px}button,select,input{font:inherit;accent-color:#00695f}button,select{background:#fff;color:inherit;border:1px solid #637d79;border-radius:4px;padding:3px 8px;cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #be6624;outline-offset:2px}label{display:inline-flex;gap:5px;align-items:center}.tools{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:9px 0}.edit{display:grid;grid-template-columns:minmax(140px,240px) 1fr;gap:18px;align-items:center}.image{display:block;width:100%;height:auto;image-rendering:pixelated}.pointboard{position:relative;border:2px solid #597b73}.board{cursor:crosshair}.pointboard:after{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(to right,#ffffff2b 1px,transparent 1px),linear-gradient(to bottom,#ffffff2b 1px,transparent 1px);background-size:6.25% 8.333333%}.pointboard i{position:absolute;pointer-events:none;z-index:1;width:6.25%;height:8.333333%;outline:2px solid #ffb65e;outline-offset:-1px}.help,small{color:#435e60}.filmrow{display:grid;grid-template-columns:minmax(80px,1.35fr) repeat(6,minmax(0,1fr));gap:5px;align-items:center;margin:5px 0}.filmrow strong{font-size:14px}.filmrow button{font-size:14px;padding:1px}.filmrow .selected{outline:2px solid #087d70;outline-offset:0}.featuregrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:620px}.featuregrid figure{margin:0}.featuregrid figcaption{font-size:15px}.locator{position:relative}.locator i{position:absolute;border:2px solid #242422;box-shadow:0 0 0 1px #fff;pointer-events:none}.featuregrid canvas{cursor:crosshair}.math{font-variant-numeric:tabular-nums;background:#edf4ed;border-left:3px solid #126858;padding:9px 12px;overflow-wrap:anywhere}.readout{font-weight:650}.filmrow .metric{text-align:center;font-variant-numeric:tabular-nums;font-size:14px}.gain{background:#f3f6f0;padding:9px 12px}.gain label{flex-wrap:wrap}.gain output{min-width:3ch}summary{cursor:pointer;font-weight:650}code{overflow-wrap:anywhere}@media(max-width:540px){.edit{grid-template-columns:minmax(125px,1fr) minmax(0,1fr);gap:10px}.tools{gap:7px}.filmrow{grid-template-columns:repeat(6,minmax(0,1fr));gap:3px}.filmrow>strong{grid-column:1/-1}.featuregrid{gap:5px}.featuregrid figcaption{font-size:13px}.filmrow .metric{font-size:12px}.gain label{display:grid;grid-template-columns:4em minmax(60px,1fr) 3ch}.gain input{width:100%}}
+</style></head><body><main><header><h1>挪一个提示点，哪几帧会变？</h1>
+<p>画面停在生成到一半。A 是固定的向左路线。B 初始只把帧 2 的点向右移四格。雪花、权重和生成进度都相同。下面每改一次点，浏览器就用实验 J 的已训练权重重新算一次预测。</p></header>
+<section><h2>给 B 改一笔</h2><div class="edit"><div class="pointboard"><canvas id="board" width="16" height="12" class="image board" aria-label="在当前帧放提示点，也可用旁边的行列选择器编辑"></canvas><i id="originalMark"></i></div>
+<div><div class="tools"><label>影片帧 <select id="frame"></select></label></div><p>橙框是 A 的位置。点击一格，把 B 的白点放在那里；也可以选好列、行后按“放点”。</p>
+<div class="tools"><label>列 x <select id="col"></select></label><label>行 y <select id="row"></select></label><button id="place">放点</button><button id="erase">清除此帧</button></div></div></div>
+<p class="readout" id="pointText"></p>
+<div class="tools"><button id="restore">恢复讲义对照</button><button id="same">让 B 与 A 相同</button><button id="blank">清空 B 全部点</button></div>
+<div class="tools gain"><label>细出口 λ <input id="fine" type="range" min="0" max="2" step=".05" value="1"> <output id="fineOut"></output></label><label>粗出口 λ <input id="coarse" type="range" min="0" max="2" step=".05" value="1"> <output id="coarseOut"></output></label></div>
+<small>两只旋钮同时作用于 A 和 B。将两个出口一起调到 0，观察 B 的预测与冻结基座相差多少。</small></section>
+<section><h2>同时看六帧的回答</h2><p>上两排是输入点，中间两排是这次网络对干净影片的估计。最后一排用蓝色标出 B 变暗的位置，橙色标出 B 变亮的位置。点帧号可以换观察帧。</p>
+<div id="films"></div><p class="help">干净画面按 [−1, 1] 显示。差图共用 ±1.25 色标。每列下方的数字是该帧全部 192 个像素的平均绝对变化，使用裁剪前的亮度。</p>
+<div class="tools"><label>读亮度的列 <select id="px"></select></label><label>行 <select id="py"></select></label></div><p id="brightness" class="math"></p><p id="baseline"></p></section>
+<section><h2>打开支路里的加号</h2><p>选一个尺度、一个通道，比较加法前后的三张数字表。点击任意一张都能选格。所有图使用同一个 ±2 色标，框中数字保留原值。</p>
+<div class="tools"><label>尺度 <select id="level"><option value="coarse">粗 · 6 × 8</option><option value="fine">细 · 12 × 16</option></select></label><label>通道 <select id="channel"></select></label><label>列 <select id="fx"></select></label><label>行 <select id="fy"></select></label></div>
+<div class="featuregrid" id="maps"></div><p class="math" id="featureMath"></p>
+<details><summary>一个特征格怎样影响其他帧？</summary><p>每一帧的粗网格经最近邻放大到 12 × 16。解码器让部分通道读取前一帧，部分读取后一帧，再与细网格拼接、做卷积，算出每个像素的 v̂。支路编码时也交换过邻帧。一个位置的亮度综合了许多格、许多通道。</p></details>
+<p class="help">本页固定第 31 页的输入，做一次网络调用。要看各套条件独立走完 24 次更新，打开包内 <code>control-lab/index.html</code>。本页可以离线单独打开。</p></section></main>
+<script>__NETWORK__</script><script>
+"use strict";
+const data=__DATA__, net=makeHintNetwork(data), el=id=>document.getElementById(id);
+const num=id=>Number(el(id).value), fmt=(x,n=4)=>x.toFixed(n);
+const reference=data.points, copyPoints=points=>points.map(p=>p && [...p]);
+const aRes=net.branch(reference), noControl=net.decode(aRes,0,0);
+let edited, bRes, resultA, resultB;
+function options(id,count,value){
+  const s=el(id);s.replaceChildren(...Array.from({length:count},(_,i)=>new Option(i,i)));
+  s.value=Math.max(0,Math.min(count-1,value));
+}
+function paint(canvas,w,h,color){
+  canvas.width=w;canvas.height=h;const ctx=canvas.getContext("2d"), img=ctx.createImageData(w,h);
+  for(let i=0;i<w*h;i++){const rgb=color(i);img.data.set(rgb,4*i);img.data[4*i+3]=255}
+  ctx.putImageData(img,0,0);
+}
+function grey(v){const g=127.5*(1+v);return [g,g,g]}
+function signed(v,limit){const end=v<0?[13,103,147]:[190,78,26],t=Math.min(1,Math.abs(v)/limit);return end.map(c=>247+(c-247)*t)}
+function pointColor(point,i){
+  return point && point[0]===i%16 && point[1]===Math.floor(i/16)?[238,244,235]:[34,55,59];
+}
+function pos(event,w,h){
+  const rect=event.currentTarget.getBoundingClientRect();
+  return [Math.max(0,Math.min(w-1,Math.floor((event.clientX-rect.left)*w/rect.width))),
+          Math.max(0,Math.min(h-1,Math.floor((event.clientY-rect.top)*h/rect.height)))];
+}
+function setFrame(f){
+  el("frame").value=f;
+  const point=edited[f]; if(point){el("col").value=point[0];el("row").value=point[1]}
+  show();
+}
+const rowLabels=["选择帧","A 提示","B 提示","A 猜的画面","B 猜的画面","变化 B − A","平均绝对变化"];
+const films=rowLabels.map((title,r)=>{
+  const row=document.createElement("div");row.className="filmrow";
+  const label=document.createElement("strong");label.textContent=title;row.append(label);el("films").append(row);
+  return Array.from({length:6},(_,f)=>{
+    const node=document.createElement(r===0?"button":r===6?"span":"canvas");
+    if(r===0){node.textContent="帧 "+f;node.onclick=()=>setFrame(f)}
+    node.className=r===6?"metric":r===0?"":"image";row.append(node);return node;
+  });
+});
+const maps=["基座 h","B 的修正 r","送入解码器 h′"].map(title=>{
+  const box=document.createElement("figure"),cap=document.createElement("figcaption"),wrap=document.createElement("div");
+  wrap.className="locator";cap.textContent=title;const c=document.createElement("canvas"),mark=document.createElement("i");
+  c.className="image";wrap.append(c,mark);box.append(cap,wrap);el("maps").append(box);
+  c.onclick=e=>{const [x,y]=pos(e,c.width,c.height);el("fx").value=x;el("fy").value=y;showFeatures()};
+  return {c,mark};
+});
+function showFeatures(){
+  const level=el("level").value, base=level==="coarse"?net.fixed.low:net.fixed.skip, extra=bRes[level];
+  const [frames,channels,h,w]=base.shape, off=(num("frame")*channels+num("channel"))*h*w;
+  const factor=num(level), idx=off+num("fy")*w+num("fx");
+  const plus=(i,res)=>base.values[i]+factor*res.values[i];
+  maps.forEach(({c,mark},k)=>{
+    paint(c,w,h,j=>signed(k===0?base.values[off+j]:k===1?extra.values[off+j]:plus(off+j,extra),2));
+    Object.assign(mark.style,{left:num("fx")*100/w+"%",top:num("fy")*100/h+"%",width:100/w+"%",height:100/h+"%"});
+  });
+  el("featureMath").textContent="框中 B 的加法　"+fmt(base.values[idx])+" + "+fmt(factor,2)+" × ("+fmt(extra.values[idx])+") = "+fmt(plus(idx,extra))+"。同位置的 A 修正为 "+fmt(aRes[level].values[idx])+"，加完得到 "+fmt(plus(idx,aRes[level]))+"。";
+}
+function show(){
+  const f=num("frame"), p=edited[f];
+  el("fineOut").textContent=fmt(num("fine"),2);el("coarseOut").textContent=fmt(num("coarse"),2);
+  paint(el("board"),16,12,i=>pointColor(p,i));
+  Object.assign(el("originalMark").style,{left:reference[f][0]*100/16+"%",top:reference[f][1]*100/12+"%"});
+  el("pointText").textContent="帧 "+f+" 的 A 点在 ("+reference[f]+")，B "+(p?"点在 ("+p+")。":"这一帧没有提示点。");
+  let baseDiff=0;
+  for(let j=0;j<6;j++){
+    films[0][j].classList.toggle("selected",j===f);films[0][j].setAttribute("aria-pressed",String(j===f));
+    const offset=j*192, a=resultA.clean.values, b=resultB.clean.values;
+    let total=0;for(let i=offset;i<offset+192;i++){total+=Math.abs(a[i]-b[i]);baseDiff=Math.max(baseDiff,Math.abs(b[i]-noControl.clean.values[i]))}
+    paint(films[1][j],16,12,i=>pointColor(reference[j],i));paint(films[2][j],16,12,i=>pointColor(edited[j],i));
+    paint(films[3][j],16,12,i=>grey(a[offset+i]));paint(films[4][j],16,12,i=>grey(b[offset+i]));
+    paint(films[5][j],16,12,i=>signed(b[offset+i]-a[offset+i],1.25));films[6][j].textContent=fmt(total/192);
+  }
+  const idx=(f*12+num("py"))*16+num("px");
+  el("brightness").textContent="帧 "+f+"，像素 ("+num("px")+", "+num("py")+")。输入 x = "+fmt(net.fixed.x.values[idx])+"。B 报 v̂ = "+fmt(resultB.v.values[idx])+"，所以 ŷ = "+fmt(data.a)+" × ("+fmt(net.fixed.x.values[idx])+") − "+fmt(data.sigma)+" × ("+fmt(resultB.v.values[idx])+") = "+fmt(resultB.clean.values[idx])+"。A 的 ŷ = "+fmt(resultA.clean.values[idx])+"。";
+  el("baseline").textContent="B 与关闭两个出口时的干净估计，全片逐像素最大绝对差为 "+fmt(baseDiff)+"。";
+  showFeatures();
+}
+function calculate(){
+  resultA=net.decode(aRes,num("fine"),num("coarse"));resultB=net.decode(bRes,num("fine"),num("coarse"));show();
+}
+function changed(){bRes=net.branch(edited);calculate();setFrame(num("frame"))}
+function restore(){edited=copyPoints(reference);edited[2]=[10,5];el("fine").value=el("coarse").value=1;el("frame").value=2;el("level").value="coarse";setGrid(0,3,2);el("px").value=7;el("py").value=5;changed()}
+function setGrid(channel,x,y){const s=el("level").value==="coarse";options("channel",s?32:16,channel);options("fx",s?8:16,x);options("fy",s?6:12,y)}
+options("frame",6,2);options("col",16,10);options("row",12,5);options("px",16,7);options("py",12,5);
+el("frame").onchange=()=>setFrame(num("frame"));el("level").onchange=()=>{setGrid(0,0,0);showFeatures()};
+for(const id of ["channel","fx","fy"])el(id).onchange=showFeatures;
+for(const id of ["px","py"])el(id).onchange=show;
+for(const id of ["fine","coarse"])el(id).oninput=calculate;
+el("board").onclick=e=>{edited[num("frame")]=pos(e,16,12);changed()};
+el("place").onclick=()=>{edited[num("frame")]=[num("col"),num("row")];changed()};
+el("erase").onclick=()=>{edited[num("frame")]=null;changed()};
+el("restore").onclick=restore;el("same").onclick=()=>{edited=copyPoints(reference);changed()};
+el("blank").onclick=()=>{edited=Array(6).fill(null);changed()};restore();
+</script></body></html>

@@ -1,0 +1,101 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>从同一格雪花再走一步</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#edf2ed;color:#193540;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:960px;margin:auto;padding:clamp(12px,3vw,36px)}header,section{padding:clamp(16px,3vw,28px);background:#fffdf7;border:1px solid #c7d7cf;border-radius:10px;margin-bottom:15px}header{border-top:6px solid #00695f}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.35;margin:6px 0 10px}h1{font-size:clamp(29px,5vw,44px)}h2{font-size:clamp(21px,3.5vw,30px)}p{margin:7px 0}.k,.note{color:#485d60}.k{font-size:13px;font-weight:bold}.note{font-size:14px}a{color:#00695f}.controls,nav,.legend{display:flex;gap:7px 16px;align-items:center;flex-wrap:wrap;margin:10px 0}.controls label{display:flex;align-items:center;gap:6px}button,select,input{font:inherit;accent-color:#00695f}button,select{background:white;color:inherit;border:1px solid #87a59b;border-radius:5px;padding:4px 7px}button,summary{cursor:pointer}:focus-visible{outline:3px solid #ab4d25;outline-offset:2px}.call{border-left:4px solid #00695f;background:#e7f2ea;padding:9px 13px;font-variant-numeric:tabular-nums}.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.card{background:#f2f3eb;padding:10px}.card b,.card small{display:block}.card output{font-size:20px;font-weight:700}.chip{width:26px;height:24px;margin-right:6px;display:inline-block;vertical-align:middle;border:1px solid #60736a}.legend span{display:inline-flex;gap:5px;align-items:center}.legend i{display:inline-block;width:13px;height:9px}.chart{width:100%;height:222px;display:block}.chart text{font:12px "MiSans",sans-serif;fill:#3f5359}summary{font-weight:bold;color:#00695f}details{margin:10px 0}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}td,th{padding:4px 5px;text-align:right;border-bottom:1px solid #cdd9d1}th:first-child,td:first-child{text-align:left}.bar{display:flex;height:16px;background:#e6e9e2;margin:8px 0}.bar span:first-child{background:#ad492c}.bar span:last-child{background:#00695f}.bar:empty{display:none}input[type=range]{width:120px}.linkline{font-size:14px}button:disabled,input:disabled{opacity:.55}
+@media(max-width:600px){.three{gap:4px}.card{padding:6px}.card b,.card small{font-size:13px}.card output{font-size:16px}.chip{width:16px;height:16px;margin-right:3px}.controls{gap:7px}.chart text{font-size:11px}table{font-size:14px}}
+</style></head><body><main><header><div class="k">公式练习 N · 第 9、65 页</div><h1>从同一格雪花再走一步</h1>
+<p>还是那两种可能的原图：亮车身 +0.80，暗背景 −0.55，各有一半机会。本帧的信号系数固定为 0.8。先算两个来源各占多大概率，然后把同一个带噪读数交给三种走法。</p>
+<nav><a href="#start">重走一步</a><a href="#bins">对比分布</a><a href="#check">用正向出题核对</a>__RELATED__</nav></header>
+<section id="start"><div class="k">一 · 同一个起点</div><h2>只换新抽的数，谁会动？</h2>
+<div class="controls"><label>当前读数 x <select id="x"></select></label><label>下一层信号系数 <select id="target"></select></label><button id="reset">回到讲义例题</button></div>
+<p id="state" class="call"></p>
+<div class="controls"><label>本次抽数 <select id="draw"><option value="center">u = 0.25，ξ = 0</option><option value="other">u = 0.75，ξ = 0</option><option value="minus">u = 0.25，ξ = −1</option><option value="plus">u = 0.25，ξ = +1</option><option value="tickets">按种子重抽</option></select></label><label>随机题号 <input id="serial" type="range" min="1" max="256" value="1"><output id="serialOut"></output></label><button id="next">再抽一组</button></div>
+<p id="numbers" class="note"></p>
+<div class="three"><div class="card"><b>精确参照</b><i class="chip" id="colorExact"></i><output id="vExact"></output><small>先抽来源，再加新噪声</small></div><div class="card"><b>DDPM</b><i class="chip" id="colorDdpm"></i><output id="vDdpm"></output><small>围绕统一均值抽一次</small></div><div class="card"><b>DDIM（η=0）</b><i class="chip" id="colorDdim"></i><output id="vDdim"></output><small>重新配比两个估计</small></div></div>
+<p id="math" class="call"></p><p class="note">u 是 0 到 1 的均匀抽数，ξ 是新抽的标准正态数，两者独立。手算选项指定其数值；按种子重抽时两种随机走法共用 ξ。灰度以 −1 到 +1 显示，旁边是裁剪前的数。</p>
+<details><summary>一次反向步的系数从哪来？</summary><p>把较干净层记为 j，当前层为 k。正向走法是 xₖ = r xⱼ + √β ξ，r = aₖ/aⱼ，β = 1−r²。若知道原值 y，两次读数是联合高斯。固定观测 xₖ 后，xⱼ 的条件中心是 cᵧ y + cₓ xₖ，共同方差为 s²。</p>
+<p>其中 cᵧ = aⱼ β / σₖ²，cₓ = r σⱼ² / σₖ²，s² = β σⱼ² / σₖ²，σ² = 1−a²。只知道带噪读数时，两种来源按第 8 页的后验概率混合。DDPM 一栏用这个共同方差和预测均值，DDIM 一栏用 aⱼ ŷ + σⱼ ε̂。</p><p id="coeff" class="call"></p></details></section>
+<section id="bins"><div class="k">二 · 固定输入时的下一层</div><h2>均值一样，亮度会落在同一处吗？</h2>
+<div class="controls"><label>与精确参照比较 <select id="compare"><option value="ddpm">DDPM 固定方差</option><option value="ddim">DDIM 确定性一步</option></select></label><button data-layer="0.82">走一小步</button><button data-layer="0.96">走到 0.96</button><button data-layer="1">直达干净层</button></div>
+<p class="note">每一对柱子比较同一亮度区间所占的概率。窄格宽 0.15，左右尾部也各算一组。纵轴随设置调整；看柱高是否相等时，请在同一张图内比较。</p>
+<div id="legend" class="legend"></div><svg id="plot" class="chart" role="img" aria-label="精确反向分布与所选采样器的分组概率"></svg>
+<div class="controls"><label>查一组亮度 <select id="bin"></select></label></div><p id="binRead" class="call"></p>
+<p id="variance"></p><div class="bar" id="varianceBar" aria-hidden="true"><span></span><span></span></div><p class="note">条形总长固定，橙色表示已知来源后组内方差的占比，绿色表示两组中心不同造成的占比。直接走到干净层时，组内扩散宽度为 0，两种干净原值仍有不同的概率。</p>
+</section><section id="check"><div class="k">三 · 从正向过程核对</div><h2>从原图往回出题，还能数出那两个峰吗？</h2><p>先抽原值，再生成较干净的早读数，最后对它继续加噪得到晚读数。把晚读数落在指定窗口里的题挑出来，数一数它们原先的早读数落在哪些组。这个检查只用正向加噪。</p>
+<p id="forward" class="call"></p><div id="legendF" class="legend"></div><svg id="plotF" class="chart" role="img" aria-label="独立正向模拟的分组计数和同一窗口的理论概率"></svg><p id="binF" class="note"></p>
+<details><summary>展开全部亮度组的概率和题数</summary><table><thead><tr><th>亮度区间</th><th>点上精确</th><th>窗内理论</th><th>实际题数</th></tr></thead><tbody id="rows"></tbody></table></details>
+<p class="linkline"><a href="#start">回到顶部调读数</a></p></section></main>
+<script type="application/json" id="data">__REVERSE_DATA__</script><script>
+const data=JSON.parse(document.getElementById('data').textContent), el=id=>document.getElementById(id);
+const teal='#00695f',rust='#ad492c',ink='#354c60';
+const fmt=(x,n=3)=>(Math.abs(x)<.5*10**(-n)?0:x).toFixed(n).replace('-','−');
+const pct=x=>fmt(100*x,2)+'%';
+function rangeName(i){
+ if(i===0)return '小于 '+fmt(data.edges[0],2);
+ if(i===data.edges.length)return '大于等于 '+fmt(data.edges.at(-1),2);
+ return '['+fmt(data.edges[i-1],2)+', '+fmt(data.edges[i],2)+')';
+}
+function options(id,values,label){el(id).replaceChildren(...values.map(v=>new Option(label(v),v)))}
+options('x',data.xs,v=>String(v));options('target',data.targets,v=>String(v));
+options('bin',Array.from({length:data.edges.length+1},(_,i)=>i),rangeName);
+function picked(){return data.cases.find(c=>c.step.x===+el('x').value&&c.step.target===+el('target').value)}
+function legend(id,labels){el(id).replaceChildren(...labels.map(([name,color])=>{
+ const item=document.createElement('span'),swatch=document.createElement('i');swatch.style.background=color;item.append(swatch,name);return item;
+}))}
+function drawChart(id,arrays,chosen){
+ const svg=el(id),w=Math.max(276,Math.floor(svg.getBoundingClientRect().width)),h=222;
+ const left=34,right=w-7,top=14,bottom=171,slot=(right-left)/arrays[0][0].length;
+ const limit=Math.max(.05,Math.ceil(20*Math.max(...arrays.flatMap(z=>z[0])))/20);
+ let html='<rect x="'+(left+chosen*slot)+'" y="'+top+'" width="'+slot+'" height="'+(bottom-top)+'" fill="#efecdc"/>';
+ for(const fraction of [0,.5,1]){
+   const y=bottom-fraction*(bottom-top);
+   html+='<line x1="'+left+'" x2="'+right+'" y1="'+y+'" y2="'+y+'" stroke="#c3d1c9" stroke-dasharray="3 3"/><text x="'+(left-3)+'" y="'+(y+4)+'" text-anchor="end">'+Number((100*fraction*limit).toFixed(1))+'%</text>';
+ }
+ for(const [side,[values,color]] of arrays.entries()){
+   values.forEach((v,i)=>{const height=v/limit*(bottom-top);
+    html+='<rect x="'+(left+(i+.08+.42*side)*slot)+'" y="'+(bottom-height)+'" width="'+(.40*slot)+'" height="'+height+'" fill="'+color+'"/>';
+   });
+ }
+ for(const [pos,label] of [[.5,'左尾'],[5,'−0.6'],[9,'0'],[13,'0.6'],[17.5,'右尾']]){
+   html+='<text x="'+(left+pos*slot)+'" y="191" text-anchor="middle">'+label+'</text>';
+ }
+ svg.setAttribute('viewBox','0 0 '+w+' '+h);svg.innerHTML=html+'<text x="'+(w/2)+'" y="215" text-anchor="middle">较干净层的亮度</text>';
+ svg.onclick=e=>{const r=svg.getBoundingClientRect();const i=Math.floor(((e.clientX-r.left)/r.width*w-left)/slot);
+   if(i>=0&&i<arrays[0][0].length){el('bin').value=i;render()}};
+}
+function rerun(){
+ const s=picked().step,mode=el('draw').value,serial=+el('serial').value-1;
+ const [u,z]=mode==='tickets'?data.tickets[serial]:{center:[.25,0],other:[.75,0],minus:[.25,-1],plus:[.25,1],custom:data.initialDraw}[mode];
+ el('serial').disabled=mode!=='tickets';el('serialOut').value=mode==='tickets'?serial+1:'—';
+ const branch=u<s.p?'车身':'背景',center=u<s.p?s.body:s.back;
+ const exact=center+s.std*z,ddpm=s.mean+s.std*z;
+ el('numbers').textContent='本次 u = '+fmt(u,4)+'，ξ = '+fmt(z,4)+'。u 小于车身概率就选车身，本次选到'+branch+'。';
+ for(const [name,v] of [['Exact',exact],['Ddpm',ddpm],['Ddim',s.ddim]]){
+  const gray=Math.round(Math.max(0,Math.min(1,(1+v)/2))*255);
+  el('color'+name).style.background='rgb('+[gray,gray,gray].join(',')+')';el('v'+name).value=fmt(v,4);
+ }
+ el('math').textContent='精确参照用'+branch+'中心 '+fmt(center,4)+'，DDPM 用两类共同的均值 '+fmt(s.mean,4)+'。两者这次都加 '+fmt(s.std*z,4)+'。DDIM 用当前的干净估计和噪声估计重新配比，得到 '+fmt(s.ddim,4)+'。';
+}
+function render(){
+ const c=picked(),s=c.step,comp=el('compare').value,i=+el('bin').value,name=comp==='ddpm'?'DDPM':'DDIM';
+ el('state').textContent='x = '+fmt(s.x,2)+'，下一层系数 '+fmt(s.target,3)+'。车身的概率为 '+pct(s.p)+'，猜干净值 '+fmt(s.clean,4)+'，猜原先的噪声 '+fmt(s.noise,4)+'。';
+ rerun();el('coeff').textContent='本例 r = '+fmt(s.ratio,4)+'，β = '+fmt(s.beta,4)+'，cᵧ = '+fmt(s.cy,4)+'，cₓ = '+fmt(s.cx,4)+'，s = '+fmt(s.std,4)+'。';
+ legend('legend',[['精确反向分布',teal],[name,rust]]);drawChart('plot',[[c.bins.exact,teal],[c.bins[comp],rust]],i);
+ el('binRead').textContent='早读数 '+rangeName(i)+' · 精确参照 '+pct(c.bins.exact[i])+'，'+name+' '+pct(c.bins[comp][i])+'。';
+ el('variance').textContent='精确方差 '+fmt(s.variance,5)+' = 组内 '+fmt(s.within,5)+' + 来源中心之间 '+fmt(s.between,5)+'。DDPM 的固定方差取组内这一项，固定起点的确定性 DDIM 方差为 0。';
+ const spans=el('varianceBar').children;spans[0].style.width=100*s.within/s.variance+'%';spans[1].style.width=100*s.between/s.variance+'%';
+ const f=c.forward;el('forward').textContent='正向出 '+data.count.toLocaleString('zh-CN')+' 道题，种子 '+data.seed+'。晚读数位于 '+fmt(s.x,2)+' ± '+fmt(data.window,2)+' 的有 '+f.kept+' 道。下图理论也对同一窗口积分。';
+ const sampled=f.counts.map(n=>f.kept?n/f.kept:0);
+ legend('legendF',[['窗口理论',teal],[f.kept?'入窗记录':'本次无入窗记录',ink]]);drawChart('plotF',[[f.expected,teal],[sampled,ink]],i);
+ el('binF').textContent='早读数 '+rangeName(i)+' · 记录 '+f.counts[i]+' 道，'+(f.kept?'占 '+pct(sampled[i]):'无入窗题')+'；窗口理论 '+pct(f.expected[i])+'。';
+ el('rows').innerHTML=f.counts.map((n,j)=>'<tr><td>'+rangeName(j)+'</td><td>'+pct(c.bins.exact[j])+'</td><td>'+pct(f.expected[j])+'</td><td>'+n+'</td></tr>').join('');
+}
+function start(x,target,mode){el('x').value=x;el('target').value=target;el('draw').value=mode;el('serial').value=1;el('compare').value='ddpm';el('bin').value=9;render()}
+for(const id of ['x','target','compare','bin'])el(id).onchange=render;
+el('draw').onchange=rerun;el('serial').oninput=rerun;
+el('next').onclick=()=>{const random=el('draw').value==='tickets';el('draw').value='tickets';el('serial').value=random?(+el('serial').value%256)+1:1;rerun()};
+for(const b of document.querySelectorAll('[data-layer]'))b.onclick=()=>{el('target').value=b.dataset.layer;render()};
+el('reset').onclick=()=>start(.04,.96,'center');window.addEventListener('resize',render);
+const custom=data.initialDraw[0]!==.25||data.initialDraw[1]!==0;
+if(custom)el('draw').add(new Option('命令指定的抽数','custom'));
+start(data.x,data.target,custom?'custom':'center');
+</script></body></html>

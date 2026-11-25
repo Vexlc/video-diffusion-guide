@@ -1,0 +1,24 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>求解器怎样评分 · 实验 P</title><style>
+*{box-sizing:border-box}body{margin:0;background:#edf2ed;color:#193540;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:860px;margin:auto;padding:clamp(14px,3vw,32px)}section,header{padding:clamp(15px,3vw,25px);background:#fffdf8;border:1px solid #cbd8d1;border-radius:8px;margin-bottom:14px}header{border-top:5px solid #00695f}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.35;margin:5px 0 10px}h1{font-size:clamp(26px,5vw,40px)}h2{font-size:22px}p{margin:6px 0}a,summary{color:#00695f}select{font:inherit;padding:3px 8px}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;margin:10px 0}th,td{text-align:left;border-bottom:1px solid #cad9d0;padding:6px}img{width:100%;display:block}.note{font-size:.9em;color:#465e63}.readout{background:#e7f0e8;border-left:4px solid #00695f;padding:8px 12px}code{overflow-wrap:anywhere}@media(max-width:480px){table{font-size:13px}th,td{padding:4px 3px}}
+</style><main><header><h1>同一批影片，用两把尺评分</h1><p>固定方向网络、空间支路与视频解码器。让 28 条留出路线各从同样的 8 份噪声开始，比较两种走法在同一查询预算下的结果。</p>__GENERATOR__</header>
+<section id="scores"><h2>改预算，核对同一段片谁答对了</h2><label>每段最多查询 <select id="budget"></select> 次</label><table><thead><tr><th>走法</th><th>抵达进度</th><th>命中帧<br>共 1344</th><th>六帧全中<br>共 224</th><th>潜码终点<br>误差</th></tr></thead><tbody id="rows"></tbody></table><p class="readout" id="paired"></p><p class="note">每帧取最亮的 3×3 窗口中心。只有六帧位置都等于指定路线，整段才算命中。尚未抵达进度 1 的草稿不计终点误差。</p></section>
+<section><h2>对照整条趋势</h2><img src="solver-metrics.svg" alt="不同预算下欧拉与中点的潜码误差及全中段数两张折线图"><p>左图拿 192 个显式中点步算出的终点作数值参照。从 224×72 个标准化潜码差取平方、求平均后再开方，得到 RMSE。右图只统计六帧中心全中。请留意两幅图各自的纵轴刻度。</p><p id="ref" class="readout"></p>
+<details><summary>复算</summary><p>解压包内进入 <code>reproduce</code>。读现有记录用 <code>python3 solver_report.py ../flow-hint --budget 4</code>。要从权重跑完整批评测，用已安装 PyTorch 的 Python 执行 <code>python3 solver_lab.py --out replay/solver</code>。</p></details></section></main>
+<script id="data" type="application/json">__RESULTS__</script><script>
+const data=JSON.parse(document.getElementById('data').textContent),el=id=>document.getElementById(id);
+const names={stop:'24 步网格',euler:'欧拉',midpoint:'显式中点'};
+for(const b of data.budgets)el('budget').add(new Option(b,b));el('budget').value=4;
+function update(){
+ const b=Number(el('budget').value);el('rows').replaceChildren();
+ for(const r of data.rows.filter(r=>r.budget===b)){
+  const tr=document.createElement('tr');
+  for(const val of [names[r.mode],r.at.toFixed(3),r.frame_hits,r.strict,r.latent_rmse===null?'—':r.latent_rmse.toFixed(4)]){
+   const td=document.createElement('td');td.textContent=val;tr.append(td);
+  }
+  el('rows').append(tr);
+ }
+ const p=data.paired[b];el('paired').textContent='逐段配对：两者都全中 '+p.both+' 段，仅欧拉全中 '+p.euler_only+' 段，仅中点全中 '+p.mid_only+' 段，两者都未全中 '+p.neither+' 段。';
+}
+el('budget').onchange=update;const r=data.reference;
+el('ref').textContent='参照加密核对：96 步与 192 步中点的终点 RMSE 为 '+r.rmse.toFixed(7)+'；1344 个帧中心中有 '+r.changed_centers+' 个改变。192 步需查询 384 次。';update();
+</script></html>

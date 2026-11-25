@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>影片帧与生成步 · 六帧放映台</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f4ef;color:#183b3e;font:17px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:980px;margin:auto;padding:clamp(14px,4vw,44px)}h1,h2{font:700 clamp(28px,5vw,50px)/1.2 "Noto Serif CJK SC",serif;margin:.3em 0}h2{font-size:clamp(22px,3.4vw,30px)}p{margin:10px 0}header p{max-width:680px}a{color:#006b60}section{margin-top:22px;padding:clamp(14px,3vw,26px);background:#fff;border-top:3px solid #176b5e}label{display:inline-block}select,input,button{font:inherit;max-width:100%;accent-color:#00695f}button,select{background:white;color:inherit;padding:4px 9px;border:1px solid #6e8982;border-radius:4px}button,summary,select{cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #d37221;outline-offset:2px}.twins,.inspector{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}.dial{padding:10px 12px;background:#eef4ed}.dial label,.dial input{display:block;width:100%}.dial button{margin-top:5px}.dial output{font-weight:700;white-space:nowrap}.film,.panels{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.film button,.matrix button{padding:2px;line-height:1.4}.film button[aria-pressed=true],.matrix button[aria-pressed=true]{outline:3px solid #087f70;outline-offset:0}.image{display:block;width:100%;height:auto;image-rendering:pixelated;background:#e4e8e1}.film{margin:15px 0}.film span{font-size:14px}.inspector{grid-template-columns:minmax(150px,240px) minmax(0,1fr);align-items:center;gap:22px}.locator{position:relative}.locator canvas{cursor:crosshair}.locator i{position:absolute;pointer-events:none;border:2px solid #ffb643;box-shadow:0 0 0 1px #312b18}.inspector label{margin:5px 10px 5px 0}.inspector input{width:4em}.panels{grid-template-columns:repeat(4,minmax(0,1fr));margin:14px 0}.panels figure{margin:0}.panels figcaption{font-weight:650;font-size:15px}.box{padding:11px 14px;background:#eff4ee;border-left:3px solid #176b5e;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.box p{margin:3px 0}.muted,small{color:#466166}.matrix{display:grid;grid-template-columns:minmax(34px,.9fr) repeat(6,minmax(0,1fr));gap:4px;max-width:650px;text-align:center;align-items:center}.matrix small{font-size:13px}details{margin-top:20px}summary{font-weight:650}.lineplot{width:100%;height:auto;display:block;max-width:730px}.note{margin-top:18px}[hidden]{display:none!important}@media(max-width:540px){.inspector{grid-template-columns:minmax(125px,1fr) minmax(0,1fr);gap:10px}.panels{grid-template-columns:repeat(2,minmax(0,1fr))}.twins{gap:6px}.dial{padding:7px}.film{gap:3px}.film span{font-size:12px}.matrix{gap:3px}}
+</style></head><body><main><header><h1>六帧影片，二十四次更新</h1>
+<p>把已更新次数拖到 24，按“播放影片帧”，看亮块怎样移动。再按“播放生成步”，让生成过程从头跑一遍。公式练习可以从默认的第 12 次更新后开始。</p>__TIMING_LINK__</header>
+<section><h2>先动一只钟</h2>
+<label>固定噪声起点 <select id="example"></select></label>
+<div class="twins"><div class="dial"><label for="frame">影片帧 f　<output id="frameOut"></output></label><input id="frame" type="range" min="0" value="2"><button id="playFrame" type="button">播放影片帧</button></div>
+<div class="dial"><label for="step">已更新 n　<output id="stepOut"></output></label><input id="step" type="range" min="0" value="12"><button id="playStep" type="button">播放生成步</button></div></div>
+<p id="caption"></p><div class="film" id="film" aria-label="同一生成步的六帧"></div>
+<details id="contact"><summary>展开全部 25 行 × 6 帧，点一格跳转</summary><p>每个小格是采样器保存的状态。向右换帧，向下多完成一次更新。</p><div id="matrix" class="matrix"></div></details></section>
+<section id="update"><h2>下一步接到的是哪张图？</h2><p>固定刚选的影片帧，在大图上点一个像素。橙框的位置也能用行、列输入框选取，左上角是第 0 行、第 0 列。</p>
+<div class="inspector"><div class="locator"><canvas class="image" id="zoom" aria-label="当前状态，点选像素"></canvas><i id="reticle"></i></div><div><label>行 <input type="number" id="row" min="0" value="5"></label><label>列 <input type="number" id="col" min="0" value="7"></label><p id="pos"></p></div></div>
+<div class="panels" id="panels"></div><div class="box" id="math"></div>
+<p class="muted">网络报出 v̂。a 和 σ 分别是当前的信号与噪声系数，带撇号的是下一层的系数。显示黑白时把亮度裁到 [−1, 1]，代入公式时保留原数。以下曲线可读出超出显示范围的值。</p>
+<h2>盯住这个像素直到成片</h2><p>横轴每向右一格就完成一次更新。实线记录实际状态，虚线显示该次调用估计的干净亮度。两条线的间距说明这两种读数相差多少。</p>
+<svg id="curve" class="lineplot" viewBox="0 0 560 185" role="img" aria-label="选定像素的实际状态与本次猜测的干净亮度随生成次数变化"></svg>
+<small>八个起点均取自实验 I 的同一批测试噪声。网络有 21,745 个参数，使用确定性 DDIM 更新。每次调用可看到全部六帧。控制台复算命令见包内 reproduce/README.md。</small></section>
+</main><script src="clock-data.js"></script><script>
+"use strict";
+const $ = id => document.getElementById(id);
+const [cases, frames, height, width] = clockRecording.shape;
+const steps = clockRecording.steps, plane = width*height, stride = cases*frames*plane;
+function decode(encoded){
+  const bytes=Uint8Array.from(atob(encoded), letter=>letter.charCodeAt(0));
+  if(new Uint8Array(new Uint32Array([1]).buffer)[0]===1) return new Float32Array(bytes.buffer);
+  const view=new DataView(bytes.buffer);
+  return Float32Array.from({length:bytes.length/4},(_,i)=>view.getFloat32(i*4,true));
+}
+const states=decode(clockRecording.states), velocities=decode(clockRecording.velocities);
+const fmt=value=>value.toFixed(4);
+function offset(k,n,f){return n*stride+(k*frames+f)*plane}
+function reading(i,n){
+  const x=states[i];
+  if(n===steps) return {x};
+  const v=velocities[i], [a,s,b,t]=clockRecording.coefficients[n];
+  const clean=a*x-s*v, eps=s*x+a*v;
+  return {x,v,a,s,b,t,clean,eps,next:b*clean+t*eps,stored:states[i+stride]};
+}
+function paint(canvas,k,n,f,clean=false){
+  canvas.width=width;canvas.height=height;
+  const ctx=canvas.getContext("2d"), img=ctx.createImageData(width,height), base=offset(k,n,f);
+  const coeff=clockRecording.coefficients[n];
+  for(let j=0;j<plane;j++){
+    const i=base+j, value=clean?coeff[0]*states[i]-coeff[1]*velocities[i]:states[i];
+    img.data[4*j]=img.data[4*j+1]=img.data[4*j+2]=(value+1)*127.5;img.data[4*j+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+}
+function canvasFor(k,n,f,clean=false){
+  const canvas=document.createElement("canvas");canvas.className="image";paint(canvas,k,n,f,clean);return canvas;
+}
+function choose(n,f){stop();$("step").value=n;$("frame").value=f;refresh()}
+let matrixCase=-1, matrixSelection=null;
+function showMatrix(k,n,f){
+  if(!$("contact").open)return;
+  if(matrixCase!==k){
+    const grid=$("matrix");grid.replaceChildren();matrixSelection=null;matrixCase=k;
+    const label=value=>{const cell=document.createElement("small");cell.textContent=value;grid.append(cell)};
+    label("次数");for(let j=0;j<frames;j++)label("帧 "+j);
+    for(let count=0;count<=steps;count++){
+      label(count);
+      for(let j=0;j<frames;j++){
+        const btn=document.createElement("button");btn.type="button";btn.id="cell-"+count+"-"+j;
+        btn.setAttribute("aria-label","已更新 "+count+" 次，帧 "+j);btn.setAttribute("aria-pressed","false");
+        btn.append(canvasFor(k,count,j));btn.onclick=()=>choose(count,j);grid.append(btn);
+      }
+    }
+  }
+  if(matrixSelection)matrixSelection.setAttribute("aria-pressed","false");
+  matrixSelection=$("cell-"+n+"-"+f);matrixSelection.setAttribute("aria-pressed","true");
+}
+function drawCurve(k,f,row,col,n){
+  const actual=[],clean=[];
+  for(let count=0;count<=steps;count++){
+    const p=reading(offset(k,count,f)+row*width+col,count);actual.push(p.x);if(count<steps)clean.push(p.clean);
+  }
+  const lo=Math.floor(Math.min(0,...actual,...clean)*2)/2, hi=Math.max(lo+.5,Math.ceil(Math.max(0,...actual,...clean)*2)/2);
+  const x=count=>58+count*480/steps,y=value=>136-(value-lo)*115/(hi-lo);
+  const line=(x1,y1,x2,y2,color)=>'<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+color+'"/>';
+  const label=(xx,yy,s)=>'<text x="'+xx+'" y="'+yy+'" text-anchor="middle" fill="#395855" font-size="13">'+s+'</text>';
+  const path=(arr,color,dash)=>'<polyline fill="none" stroke="'+color+'" stroke-width="2.6" stroke-dasharray="'+dash+'" points="'+arr.map((v,i)=>x(i)+','+y(v)).join(' ')+'"/>';
+  let chart='';
+  for(const value of new Set([lo,0,hi]))chart+=line(x(0),y(value),x(steps),y(value),"#d9e1da")+label(30,y(value)+4,value.toFixed(1));
+  for(let count=0;count<=steps;count+=6)chart+=label(x(count),156,count);
+  chart+=line(x(n),14,x(n),138,"#ba601f")+path(actual,"#00695f","none")+path(clean,"#815330","6 4");
+  chart+='<circle r="4" cx="'+x(n)+'" cy="'+y(actual[n])+'" fill="#00695f"/>'+label(298,178,"已更新次数 n");
+  $("curve").innerHTML=chart;
+}
+function refresh(){
+  const k=+$("example").value,n=+$("step").value,f=+$("frame").value,row=+$("row").value,col=+$("col").value;
+  $("stepOut").textContent=n+" / "+steps;$("frameOut").textContent=f+" / "+(frames-1);
+  $("caption").textContent=n===steps?"已完成 24 次更新。这六帧构成最终影片。":"这一排固定在更新 "+n+" 次之后。每一格都是采样器此时持有的一帧。";
+  Array.from($("film").children).forEach((btn,j)=>{paint(btn.firstChild,k,n,j);btn.setAttribute("aria-pressed",String(f===j))});
+  showMatrix(k,n,f);paint($("zoom"),k,n,f);
+  Object.assign($("reticle").style,{left:100*col/width+"%",top:100*row/height+"%",width:100/width+"%",height:100/height+"%"});
+  const p=reading(offset(k,n,f)+row*width+col,n);
+  $("pos").textContent="帧 "+f+"，第 "+row+" 行、第 "+col+" 列。此刻的亮度为 "+fmt(p.x)+"。";
+  const cards=n===steps?[["最终影片",steps,false]]:[["① 当前输入 x",n,false],["② 这次猜的干净图 ŷ",n,true],["③ 下一步接到的 x′",n+1,false],["④ 最终影片",steps,false]];
+  $("panels").replaceChildren(...cards.map(([title,count,isClean])=>{const fig=document.createElement("figure"),cap=document.createElement("figcaption");cap.textContent=title;fig.append(canvasFor(k,count,f,isClean),cap);return fig}));
+  const lines=n===steps?["采样已经结束。最终亮度 x = "+fmt(p.x)+"。","此处共有 25 个状态、24 次网络调用。第 25 个状态直接作为输出。"]:[
+    "第 "+(n+1)+" 次调用　输入 x = "+fmt(p.x)+"，网络输出 v̂ = "+fmt(p.v),
+    "猜干净值　ŷ = a·x − σ·v̂ = "+fmt(p.a)+" × ("+fmt(p.x)+") − "+fmt(p.s)+" × ("+fmt(p.v)+") = "+fmt(p.clean),
+    "猜噪声值　ε̂ = σ·x + a·v̂ = "+fmt(p.s)+" × ("+fmt(p.x)+") + "+fmt(p.a)+" × ("+fmt(p.v)+") = "+fmt(p.eps),
+    "按下一层重组　x′ = "+fmt(p.b)+" × ("+fmt(p.clean)+") + "+fmt(p.t)+" × ("+fmt(p.eps)+") = "+fmt(p.next),
+    "采样器实际写入 "+fmt(p.stored)+"。用完整记录复算后，两者的绝对差为 "+Math.abs(p.next-p.stored).toExponential(2)+"。显示的中间数值已四舍五入。"];
+  $("math").replaceChildren(...lines.map(s=>{const para=document.createElement("p");para.textContent=s;return para}));
+  drawCurve(k,f,row,col,n);
+}
+let timer=null,playing="";
+function stop(){clearInterval(timer);timer=null;playing="";$("playFrame").textContent="播放影片帧";$("playStep").textContent="播放生成步"}
+function play(id){
+  if(playing===id){stop();return}
+  stop();playing=id;
+  const input=$(id),btn=$(id==="step"?"playStep":"playFrame");btn.textContent="暂停";
+  if(+input.value===+input.max)input.value=0;
+  refresh();timer=setInterval(()=>{input.value=+input.value+1;refresh();if(+input.value===+input.max)stop()},id==="step"?260:1000/3);
+}
+for(let k=0;k<cases;k++)$("example").add(new Option("起点 "+(k+1),k));
+$("step").max=steps;$("frame").max=frames-1;$("row").max=height-1;$("col").max=width-1;
+for(let j=0;j<frames;j++){
+  const btn=document.createElement("button"),title=document.createElement("span");btn.type="button";title.textContent="帧 "+j;
+  btn.append(canvasFor(0,0,j),title);btn.onclick=()=>choose(+$("step").value,j);$("film").append(btn);
+}
+for(const id of ["step","frame","example"])$(id).addEventListener(id==="example"?"change":"input",()=>{stop();refresh()});
+for(const id of ["row","col"])$(id).addEventListener("input",()=>{const input=$(id);if(input.value!=="" && input.validity.valid){stop();refresh()}});
+for(const id of ["row","col"])$(id).addEventListener("change",()=>{const input=$(id);input.value=Math.max(0,Math.min(+input.max,Math.round(+input.value||0)));refresh()});
+$("zoom").onclick=event=>{
+  const box=$("zoom").getBoundingClientRect();
+  $("col").value=Math.max(0,Math.min(width-1,Math.floor((event.clientX-box.left)*width/box.width)));
+  $("row").value=Math.max(0,Math.min(height-1,Math.floor((event.clientY-box.top)*height/box.height)));stop();refresh();
+};
+$("contact").ontoggle=()=>showMatrix(+$("example").value,+$("step").value,+$("frame").value);
+$("playFrame").onclick=()=>play("frame");$("playStep").onclick=()=>play("step");
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stop()});refresh();
+</script></body></html>

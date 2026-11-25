@@ -1,0 +1,103 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>把中间一帧的球挪开 · ControlVideo</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f0f4ef;color:#193540;font:17px/1.68 "MiSans","Microsoft YaHei",sans-serif}main{max-width:950px;margin:auto;padding:clamp(14px,4vw,44px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.36;margin:.4em 0}h1{font-size:clamp(28px,5vw,44px)}h2{font-size:clamp(20px,3vw,29px)}p{margin:7px 0}section{background:white;border-top:3px solid #00695f;padding:clamp(12px,3vw,24px);margin:20px 0}nav,.tools{display:flex;gap:8px 15px;align-items:center;flex-wrap:wrap}a,summary{color:#00675d}nav{font-size:15px}.tools{background:#eaf3ec;padding:9px 12px;margin:10px 0}.tools label{display:inline-flex;gap:5px;align-items:center}button,select,input{font:inherit;accent-color:#00695f}select,button{border:1px solid #8aa099;border-radius:4px;background:white;padding:2px 7px;color:inherit}button,summary,canvas{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #aa4b2f;outline-offset:2px}.pictures{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}.features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px}.pictures figure,.features figure{margin:0}canvas{display:block;width:100%;height:auto}.features canvas{image-rendering:pixelated}.features figcaption,.pictures figcaption{font-size:15px;color:#354e58}.readout{border-left:3px solid #007365;background:#eff5ef;padding:8px 12px;font-variant-numeric:tabular-nums}.note{color:#496067;font-size:15px}.bars{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}.bars button{font-size:14px;padding:5px}.bars button[aria-pressed=true]{outline:2px solid #00695f}.meter{display:block;background:#dae4df;height:7px;margin:3px 0}.meter i{display:block;height:100%;background:#00695f}details{background:#fbf6e8;padding:10px 14px;margin:10px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}.scroll{overflow:auto}table{border-collapse:collapse}th,td{padding:4px 12px;text-align:left;border-bottom:1px solid #d6dfda}@media(max-width:500px){.features{gap:5px}.pictures{gap:7px}.tools{gap:8px}.features figcaption,.bars button{font-size:12px}.bars button{padding:3px}.features figure{min-width:0}}
+</style><main>__NAV__<h1>把中间一帧的球挪开</h1>
+<p>五张深度图告诉 ControlVideo 物体在哪里、哪里更近。A 的球每帧向右挪 24 像素。B 只在第 2 帧多挪 48 像素。模型每次都读同一句文字，要求在浅蓝桌面上画一个橙色球。先猜，下一帧的颜色会相同吗？</p>
+<section id="films"><h2>先看条件，再看生成的五帧</h2>
+<div class="tools"><label>播放帧 <select id="frame"></select></label><label>控制强度 λ <select id="scale"><option>0</option><option selected>1</option></select></label><button id="play">播放五帧</button><label>像素列 <input id="col" type="number" min="0" max="255" value="152"></label><label>行 <input id="row" type="number" min="0" max="191" value="102"></label></div>
+<div class="pictures" id="pictures"></div><p id="pixel" class="readout" role="status">正在读取离线图像…</p>
+<h3>哪一帧的成片改动最多？</h3><div class="bars" id="bars"></div><p id="score" class="note"></p><p class="note">每栏量的是两张成片对应 RGB 通道的平均绝对差，范围 0–255，条长用同一刻度。<span id="parameters"></span>各帧共用同一张初始潜噪声，帧插值关闭。</p></section>
+<section id="sum"><h2>沿第一个出口追一次加法</h2><p>停在第 1 次网络预测，两套条件的带噪输入完全相同。冻结主干给出 h，训练过的深度支路送来 r，解码器在同一位置读到 h′。每张小图都显示正面文字分支、通道 0 的 24 行 × 32 列特征。</p>
+<div class="tools"><label>特征帧 <select id="sf"></select></label><label>控制强度 λ <select id="sg"><option>0</option><option selected>1</option></select></label><label>特征列 <select id="sx"></select></label><label>行 <select id="sy"></select></label></div>
+<div id="features" class="features"></div><p id="arithmetic" class="readout"></p><p class="note">蓝色为负、橙色为正，白色接近零。为了看清较小的修正，h 和 h′ 用 ±1.30，r 用 ±0.11。黑框可以点选，也可用列、行选框定位。图中的 r 已经乘了 λ。</p>
+<details><summary>查看全部 13 个出口的尺寸</summary><p>每个出口送出一叠数字。这里用“通道 × 帧 × 行 × 列”显示形状，省去批次轴。最后一行送入中间块，其余 12 项加到对应的跳跃连接。</p><div class="scroll"><table><thead><tr><th>出口</th><th>尺寸</th></tr></thead><tbody id="shapes"></tbody></table></div></details></section>
+<details><summary>重算和作者源码</summary><p>只用浏览器即可离线回放。进入包内 reproduce 目录后，下面两条命令仅使用 Python 标准库，从随包记录复算显示像素和首次预测的加法。</p><pre>python3 depth_report.py --frame 3 --pixel 152 102
+python3 depth_report.py --frame 2 --feature 16 12</pre><p>从权重重新生成需要作者版本的 ControlVideo、SD 1.5、深度 ControlNet、RIFE 权重和 CUDA。README 中列出版本和命令。<a href="https://arxiv.org/abs/2302.05543">ControlNet 论文</a>　<a href="https://arxiv.org/abs/2305.13077">ControlVideo 论文</a>　<a href="https://github.com/YBYBZhang/ControlVideo/tree/4eac95f722bad014bbd42932795a33212ed417a1">本实验使用的作者版本</a>　<a href="https://huggingface.co/lllyasviel/sd-controlnet-depth">深度控制权重</a></p></details></main>
+<script type="application/json" id="record">__DATA__</script><script>
+'use strict';
+const data=JSON.parse(document.getElementById('record').textContent),el=id=>document.getElementById(id),val=id=>Number(el(id).value);
+el('parameters').textContent='四次实验都用种子 '+data.seed+'、文字引导强度 7.5、'+data.steps+' 次 DDIM 更新。';
+const [width,height]=data.size,keys=['h','r','joined'],names=['主干 h','支路 r','解码器 h′'];
+for(const [id,count,initial] of [['frame',5,3],['sf',5,2],['sx',32,16],['sy',24,12]]){
+ for(let i=0;i<count;i++)el(id).add(new Option(i,i));el(id).value=initial;
+}
+function figure(parent,w,h,title){
+ const fig=document.createElement('figure'),cv=document.createElement('canvas'),cap=document.createElement('figcaption');
+ cv.width=w;cv.height=h;cap.textContent=title;cv.setAttribute('aria-label',title);fig.append(cv,cap);el(parent).append(fig);
+ return {cv,cap,ctx:cv.getContext('2d',{willReadFrequently:true})};
+}
+const pictures=['深度图 A','深度图 B','成片 A','成片 B'].map(name=>figure('pictures',width,height,name));
+const features=Array.from({length:6},(_,i)=>figure('features',192,144,(i<3?'A':'B')+' · '+names[i%3]));
+function marker(ctx,x,y,s,stroke){
+ ctx.strokeStyle=stroke;ctx.lineWidth=s===1?1:2;
+ if(s===1){ctx.strokeRect(x-3.5,y-3.5,7,7)}else{ctx.strokeRect(x*s+1,y*s+1,s-2,s-2)}
+}
+function coordinates(ev,w,h){
+ const bounds=ev.currentTarget.getBoundingClientRect();
+ return [Math.max(0,Math.min(w-1,Math.floor((ev.clientX-bounds.left)/bounds.width*w))),
+         Math.max(0,Math.min(h-1,Math.floor((ev.clientY-bounds.top)/bounds.height*h)))];
+}
+function bounded(id,max){
+ const n=Math.round(val(id));return Math.max(0,Math.min(max,Number.isFinite(n)?n:0));
+}
+let ready=false,timer=null;
+const images={};
+async function loadPictures(){
+ const groups={A:data.maps.A,B:data.maps.B};
+ for(const [key,run] of Object.entries(data.runs))groups[key]=run.film;
+ await Promise.all(Object.entries(groups).map(async ([key,srcs])=>{
+   images[key]=await Promise.all(srcs.map(async src=>{const image=new Image();image.src=src;await image.decode();return image}));
+ }));
+ ready=true;film();
+}
+const bars=Array.from({length:5},(_,f)=>{
+ const btn=document.createElement('button'),meter=document.createElement('span'),bar=document.createElement('i'),num=document.createElement('span');
+ meter.className='meter';meter.append(bar);btn.append('帧 '+f,meter,num);el('bars').append(btn);
+ btn.onclick=()=>{stop();el('frame').value=f;film()};return {btn,bar,num};
+});
+function film(){
+ if(!ready)return;
+ const f=val('frame'),s=el('scale').value,x=bounded('col',255),y=bounded('row',191),rgb=[];
+ ['A','B','A'+s,'B'+s].forEach((key,i)=>{
+   const {ctx}=pictures[i];ctx.drawImage(images[key][f],0,0);
+   rgb.push(Array.from(ctx.getImageData(x,y,1,1).data).slice(0,3));
+   marker(ctx,x,y,1,'#d92cab');
+ });
+ el('pixel').textContent='帧 '+f+'，像素 ('+x+', '+y+')。深度提示 A / B 为 '+rgb[0][0]+' / '+rgb[1][0]+'。成片 A 的 RGB 是 ('+rgb[2].join(', ')+')，B 是 ('+rgb[3].join(', ')+')。';
+ const scores=data.delta[s],max=Math.max(...Object.values(data.delta).flat().map(r=>r.mae),1);
+ scores.forEach((r,i)=>{bars[i].bar.style.width=(r.mae/max*100)+'%';bars[i].num.textContent=r.mae.toFixed(2);bars[i].btn.setAttribute('aria-pressed',String(i===f))});
+ el('score').textContent='帧 '+f+' 有 '+scores[f].changed.toLocaleString('en-US')+' / 49,152 个像素至少一个 RGB 通道改变。点击横栏可切换帧。';
+}
+function stop(){clearTimeout(timer);timer=null;el('play').textContent='播放五帧'}
+function tick(){if(val('frame')===4){stop();return}el('frame').value=val('frame')+1;film();timer=setTimeout(tick,500)}
+el('play').onclick=()=>{if(!ready)return;if(timer!==null){stop();return}el('frame').value=0;film();el('play').textContent='停止';timer=setTimeout(tick,500)};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stop()});
+for(const p of pictures)p.cv.onclick=ev=>{stop();[el('col').value,el('row').value]=coordinates(ev,width,height);film()};
+for(const id of ['frame','scale','col','row'])el(id).onchange=()=>{stop();el('col').value=bounded('col',255);el('row').value=bounded('row',191);film()};
+const fields={};
+for(const [key,run] of Object.entries(data.runs)){
+ fields[key]={};for(const k of keys){
+   const bytes=Uint8Array.from(atob(run.trace[k].data),c=>c.charCodeAt(0)),view=new DataView(bytes.buffer);
+   fields[key][k]=Float32Array.from({length:bytes.length/4},(_,i)=>view.getFloat32(4*i,true));
+ }
+}
+function featuresAt(){
+ const f=val('sf'),s=el('sg').value,x=val('sx'),y=val('sy'),lines=[];
+ ['A','B'].forEach((lab,j)=>{
+  const numbers=[];
+  keys.forEach((k,i)=>{
+   const plane=fields[lab+s][k].subarray(f*768,(f+1)*768),v=plane[y*32+x],{ctx,cap}=features[3*j+i],limit=i===1?.11:1.3;
+   plane.forEach((a,idx)=>{const tip=a<0?[13,103,147]:[190,78,26],t=Math.min(1,Math.abs(a)/limit);
+    ctx.fillStyle='rgb('+tip.map(c=>Math.round(247+t*(c-247))).join(',')+')';ctx.fillRect(idx%32*6,Math.floor(idx/32)*6,6,6)});
+   marker(ctx,x,y,6,'#17272e');cap.textContent=lab+' · '+names[i]+' '+v.toFixed(5);numbers.push(v.toFixed(5));
+  });
+  lines.push(lab+'　'+numbers[0]+' + ('+numbers[1]+') ≈ '+numbers[2]);
+ });
+ el('arithmetic').textContent='帧 '+f+'，特征格 ('+x+', '+y+')。'+lines.join('。')+'。h′ 是从解码器入口读取的 FP16 实测值。';
+}
+for(const p of features)p.cv.onclick=ev=>{[el('sx').value,el('sy').value]=coordinates(ev,32,24);featuresAt()};
+for(const id of ['sf','sg','sx','sy'])el(id).onchange=featuresAt;
+data.runs.A1.trace.shapes.forEach((shape,i)=>{const tr=document.createElement('tr');for(const value of [i===12?'中间块':'跳跃 '+i,shape.join(' × ')]){const td=document.createElement('td');td.textContent=value;tr.append(td)}el('shapes').append(tr)});
+featuresAt();loadPictures().catch(()=>el('pixel').textContent='读取内嵌图像失败，请重新解压完整离线包。');
+</script></html>

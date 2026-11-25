@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>小模型工坊 · 速度、遮罩与跨帧匹配</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font:17px/1.65 "MiSans","Microsoft YaHei",sans-serif;background:#edf3ee;color:#193540}main{max-width:930px;padding:24px;margin:auto}section{background:white;margin:20px 0;padding:clamp(12px,3vw,28px);border-radius:8px}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.35}h1{font-size:clamp(30px,5vw,46px)}h2{margin:.3em 0}.tag{font-weight:bold;color:#00695f;letter-spacing:.08em}.controls{display:flex;align-items:center;gap:12px 20px;flex-wrap:wrap;background:#ecf3ee;padding:10px 12px}button,select,input{font:inherit;accent-color:#00695f}button,select{border:1px solid #809890;border-radius:4px;background:white;padding:4px 8px}button{cursor:pointer}input{vertical-align:middle;max-width:100%}figure{margin:12px 0}.plot svg{width:100%;height:auto;display:block}.read{padding:9px 12px;border-left:3px solid #00695f;background:#f2f7f3}.hint{font-size:.9em;color:#495f66}a{color:#00695f}summary{cursor:pointer;color:#00695f;font-weight:700}code{overflow-wrap:anywhere}nav{display:flex;gap:20px;flex-wrap:wrap}article{display:grid;gap:8px}label{max-width:100%}@media(max-width:550px){main{padding:12px}.plot{overflow:auto}.plot svg{min-width:480px}}
+</style></head><body><main>
+<span class="tag">生成模型　/　小模型工坊</span><h1>训练完，模型究竟学到了什么？</h1>
+<p>不要急着看损失。先比较同一批噪声生成的 256 段短片，再追踪一张错位的遮罩，最后给跨帧匹配制造一道有两个正确外观的难题。</p>
+<nav><a href="#fm">E　学习速度</a><a href="#spatial">F　像素遮罩</a><a href="#att">G　跨帧匹配</a><a href="#reverse">H　重复生成</a></nav>
+<section id="fm"><div class="tag">实验 E　·　PDF 第 21–22 页</div><h2>从零张题目，学到会分左右的速度表</h2>
+<p>把训练题数设为 0，再选训练最多的一档。只动这一个旋钮：端点参考、256 个起点和采样的 32 个欧拉步都没有变。</p>
+<div class="controls"><label>训练题数 <select id="stage"></select></label><label>速度剖面的时间 <select id="time"><option>0.25</option><option selected>0.50</option><option>0.75</option></select></label></div>
+<figure id="motion" class="plot"></figure><p id="motionRead" class="read" aria-live="polite"></p>
+<details open><summary>看不同训练量学出的路牌</summary><div id="field" class="plot"></div><p class="hint">纵轴是运动系数在生成时间里的变化率，不是影片中小车的车速。曲线的每个点是一个位置上的模型回答。</p></details></section>
+<section id="spatial"><div class="tag">实验 F　·　PDF 第 24–25 页</div><h2>给一个位置提示，会让哪些像素跟着变？</h2>
+<p>先看第 3 帧的⑤和⑥，注意小车左右边缘；再翻到第 0 帧，这里的“上一帧”按约定就是自己。</p>
+<div class="controls"><label>视频帧 <input id="frame" type="range" min="0" max="7" value="3"> <output id="frameOut">3</output></label><button id="play">从头播放</button>
+<label><input id="edge" type="checkbox">只看错位影响区</label></div>
+<figure id="spatialView" class="plot"></figure><p class="read" id="spaceRead"></p>
+<p class="hint">一张固定噪声强度下的还原估计，不是完整版 ControlNet 采样。误差按未裁剪浮点值计算；图像共用同一显示范围。</p></section>
+<section id="att"><div class="tag">实验 G　·　PDF 第 23 页</div><h2>把两块钥匙变得一样，注意力会认错吗？</h2>
+<div class="controls"><label><input type="checkbox" id="ambiguous">让上一帧的两个块都有“车”的外观</label></div>
+<figure id="attView" class="plot"></figure><p id="attRead" class="read" aria-live="polite"></p>
+<p class="hint">这是手工选定 Q 和 K 的机制演示，不是从某个视频模型提取的注意力图。</p></section>
+<section id="reverse"><div class="tag">实验 H　·　PDF 第 27–28 页</div><h2>同一起点重跑，最后还是同一条路线吗？</h2>
+<p>固定起始噪声，滑动重跑编号：先用 DDIM，再改用 DDPM。每一格都是从同一个预测器真实算出的车心。选择“换起点”，改变的是另一种随机来源。</p>
+<div class="controls"><label>采样器 <select id="sampler"><option>DDIM</option><option>DDPM</option></select></label><label><input id="fresh" type="checkbox">每次换起点</label>
+<label>重跑编号 <input id="repeat" type="range" min="1" max="96" value="1"> <output id="repeatOut">1</output></label></div>
+<figure id="reverseView" class="plot"></figure><p class="read" id="reverseRead" aria-live="polite"></p></section>
+<section><h2>自己重算</h2><p>本页是 Python 新算出的固定样本和训练检查点，不在浏览器里重新训练。打开复现包的 <code>reproduce</code> 目录，运行 <code>python3 workshop.py</code>；或试试 <code>python3 workshop.py --samples 0 --updates 0</code>。每次都会生成一份可单独带走的 HTML。</p><p id="settings" class="hint"></p></section>
+</main><script type="application/json" id="payload">__WORKSHOP_DATA__</script><script>
+"use strict";
+const elem=id=>document.getElementById(id), data=JSON.parse(elem("payload").textContent);
+for(const entry of data.stages){const option=document.createElement("option");option.textContent=entry.count.toLocaleString();elem("stage").append(option)}
+elem("stage").selectedIndex=data.stages.length-1;
+function motion(){const stage=data.stages[elem("stage").selectedIndex];elem("motion").innerHTML=stage.figure;elem("field").innerHTML=data.profiles[elem("time").selectedIndex];
+elem("motionRead").textContent="落在两团中间（|运动系数| < 0.5）的有 "+stage.gap+" / 256 段。与目标运动分布的排序距离："+stage.w1.toFixed(3)+"；在留出题上的速度均方误差："+stage.loss.toFixed(3)+"。";}
+function spatial(){const frame=Number(elem("frame").value),edge=elem("edge").checked;
+elem("frameOut").textContent=frame;elem("spatialView").innerHTML=(edge?data.edges:data.frames)[frame];elem("spaceRead").textContent=edge?
+"白色位置只占八帧中的 "+data.spatial.n_changed+" / 11520 个像素。柱形统计的是整段短片，不会随帧号改变。":
+"第 "+frame+" 帧。⑤ 和 ⑥ 用同一个带噪画面和相同的两个支路权重，唯一的差别是控制遮罩的帧号。";}
+function att(){const index=Number(elem("ambiguous").checked);elem("attView").innerHTML=data.attention[index];elem("attRead").textContent="车的查询给三个位置分配了 "+data.votes[index].map(value=>(100*value).toFixed(1)+"%").join(" / ")+"。"+(index?"两块同样像车，无法只靠外观判断身份。":"第二个块最像车，但权重并非 100%。");}
+let timer=null;
+function stop(){clearInterval(timer);timer=null;elem("play").textContent="从头播放";}
+elem("play").onclick=()=>{if(timer!==null){stop();return}elem("frame").value=0;spatial();elem("play").textContent="暂停";timer=setInterval(()=>{elem("frame").value=Number(elem("frame").value)+1;spatial();if(Number(elem("frame").value)===7)stop()},360)};
+elem("stage").onchange=motion;elem("time").onchange=motion;elem("edge").onchange=spatial;elem("frame").oninput=()=>{stop();spatial()};elem("ambiguous").onchange=att;
+function reverse(){const group=data.reverse[elem("sampler").value+"_"+(elem("fresh").checked?"fresh":"fixed")], index=Number(elem("repeat").value)-1, sample=group.cases[index];
+const labels=["向左・低偏移","向左・高偏移","向右・低偏移","向右・高偏移"];
+const items=sample.track.map((value,frame)=>{const left=frame*80+3,center=left+37+17*value;return '<rect x="'+left+'" y="6" width="74" height="43" rx="3" fill="#e4eee6"/><path stroke="#8aa398" d="M'+left+',36h74"/><g transform="translate('+center+',35)" fill="#00695f"><rect x="-9" y="-6" width="18" height="6"/><rect x="-5" y="-9" width="10" height="5"/><circle cx="-5" cy="0" r="2"/><circle cx="5" cy="0" r="2"/></g><text x="'+(left+36)+'" y="69" text-anchor="middle" font-size="13">帧 '+frame+'</text>'}).join("");
+elem("reverseView").innerHTML='<svg viewBox="0 0 640 75" role="img" aria-label="八帧生成路线">'+items+'</svg>';elem("repeatOut").textContent=index+1;elem("reverseRead").textContent="本次："+labels[sample.route]+"。96 次依次落入「"+labels.join("、")+"」的次数："+group.counts.join(" / ")+"。";}
+elem("sampler").onchange=reverse;elem("fresh").onchange=reverse;elem("repeat").oninput=reverse;
+elem("settings").textContent="本次设置：种子 "+data.seed+"，最大训练题数 "+data.stages.at(-1).count+"，空间支路更新 "+data.updates+" 次。";
+motion();spatial();att();reverse();
+</script></body></html>

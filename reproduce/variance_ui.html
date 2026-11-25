@@ -1,0 +1,117 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>四张题卡算出方差 · 从雪花到运动</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#19383b;background:#f3f5ef;font:17px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:990px;margin:auto;padding:clamp(15px,4vw,44px)}a{color:#00665b}nav,.controls,.cards{display:flex;flex-wrap:wrap;align-items:center;gap:9px 16px}nav{font-size:15px;margin-bottom:25px}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.3}h1{font-size:clamp(32px,5vw,50px);margin:.35em 0}h2{font-size:clamp(22px,3vw,30px);margin:0 0 8px}h3{font-size:17px;margin:0}p{margin:.55em 0}section{background:#fffefa;border:1px solid #c5d5cf;border-radius:7px;padding:clamp(14px,3vw,25px);margin:18px 0}.controls{margin:16px 0}.controls label{display:flex;align-items:center;gap:6px;max-width:100%;flex-wrap:wrap}input,select,button{font:inherit;accent-color:#086558}button,select{max-width:100%;border:1px solid #89a49c;border-radius:4px;padding:4px 9px;color:#204c46;background:#fff;cursor:pointer}.cards button[aria-pressed=true]{color:white;background:#075f53}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #b66339;outline-offset:2px}.cards{margin:12px 0;gap:6px}.cards button{font-variant-numeric:tabular-nums}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.method{border-top:3px solid var(--color);background:#f7f9f4;padding:12px 14px;min-width:0}.method h3,.method strong{color:var(--color)}.method p,.read{font-variant-numeric:tabular-nums}.method svg{display:block;width:100%;height:auto}.note{font-size:15px;color:#425b5b}.worked{padding:9px 13px;background:#eaf2eb;border-left:3px solid #288173;overflow-wrap:anywhere}.method .eq{font-size:15px;overflow-wrap:anywhere}.bar-read{font-size:17px}code{overflow-wrap:anywhere;font-size:15px}summary{cursor:pointer;color:#075f53}details{margin-top:13px}button[hidden]{display:none}
+@media(max-width:610px){.grid{grid-template-columns:1fr}.method{padding:10px}.cards button{font-size:15px}section{padding:13px}}
+</style></head><body><main>__NAV__
+<h1>四张题卡算出方差</h1><p>如果说“干净信号占 64%”，给像素乘的是 0.64 还是 0.8？先用两枚公平硬币代替两组数据，把所有可能的结果算一遍。</p>
+<section id="cards"><h2>哪些数固定，哪些数每题重抽？</h2>
+<div class="controls"><label>出题方式 <select id="mode"><option value="independent">独立抽干净值和雪花</option><option value="fixed">固定像素 0.8，只抽雪花</option><option value="shared">故意让两者用同一枚硬币</option></select></label>
+<label>干净端配比 <input type="range" id="share" min="0" max="1" step="any"><output id="shareText"></output></label><button id="half">看各占一半</button><button id="book">回到书中 64%</button></div>
+<p id="design"></p><div class="cards" id="choices" role="group" aria-label="选择一张题卡"></div><div class="grid" id="rows"></div>
+<p class="worked read" id="lesson"></p><p class="note">方差衡量一组数散得有多开。每个结果减去平均数，平方，再按出现概率取平均。图上每个圆点代表一张等可能的卡，描边圆点对应你点的卡。</p></section>
+<section id="draws"><h2>换成高斯噪声，分布有多宽？</h2><p>下面继续使用上面的配比。把硬币换成均值为 0、方差为 1 的高斯抽数。每根柱子数落在这个亮度区间的样本，两图共用坐标。切到“固定像素”，看两团亮度向哪里移动。</p>
+<div class="grid" id="histograms"></div><p class="note" id="axis"></p><p class="worked" id="linkFlow"></p>
+<details><summary>在 Python 里复算当前结果</summary><p>在离线包的 reproduce 目录执行命令。加上 <code>--out replay/variance</code> 可生成这组设置的独立网页。</p><code id="cmd"></code></details></section>
+<p><a href="https://arxiv.org/pdf/2006.11239#page=2">DDPM 原论文，式（4）</a>　<a href="https://arxiv.org/abs/2210.02747">Flow Matching 原论文</a></p></main>
+<script id="dataset" type="application/json">__DATA__</script>
+<script>
+"use strict";
+const data=JSON.parse(document.getElementById("dataset").textContent);
+const el=id=>document.getElementById(id);
+const labels=["按方差配比开根号","直接用配比作系数"];
+const colors=["#00685c","#a44829"];
+const fmt=(v,d=4)=>Number(v.toFixed(d)).toString().replace("-","−");
+const sign=v=>(v>0?"+":"")+fmt(v);
+el("share").value=data.share;el("mode").value=data.mode;
+let chosen=0;
+for(let i=0;i<2;i++){
+ const card=document.createElement("article");card.className="method";card.style.setProperty("--color",colors[i]);
+ card.innerHTML='<h3>'+labels[i]+'</h3><p class="eq" id="sum'+i+'"></p><div id="dots'+i+'"></div><p class="eq" id="squares'+i+'"></p><strong id="spread'+i+'"></strong>';
+ el("rows").append(card);
+ const graph=document.createElement("article");graph.className="method";graph.style.setProperty("--color",colors[i]);
+ graph.innerHTML='<h3>'+labels[i]+'</h3><div id="hist'+i+'"></div><p class="bar-read" id="emp'+i+'"></p>';
+ el("histograms").append(graph);
+}
+function stat(values){
+ const avg=values.reduce((s,x)=>s+x,0)/values.length;
+ const squares=values.map(x=>(x-avg)**2);
+ return {avg,squares,v:squares.reduce((s,x)=>s+x,0)/values.length};
+}
+function selectInputs(mode,y,e){
+ if(mode==="fixed")return [.8,e];
+ if(mode==="shared")return [y,y];
+ return [y,e];
+}
+function svgNode(name,attrs,label){
+ const node=document.createElementNS("http://www.w3.org/2000/svg",name);
+ for(const [key,val] of Object.entries(attrs))node.setAttribute(key,val);
+ if(label!==undefined)node.textContent=label;
+ return node;
+}
+function textNode(x,y,label,anchor="middle"){
+ return svgNode("text",{x,y,"text-anchor":anchor,fill:"#385552","font-size":13},label);
+}
+function numberLine(values,i){
+ const chart=svgNode("svg",{viewBox:"0 0 360 88",role:"img","aria-label":"当前所有题卡的混合亮度"});
+ const xpos=v=>180+101*v;
+ chart.append(svgNode("line",{x1:17,x2:343,y1:62,y2:62,stroke:"#728984"}));
+ for(const tick of [-1.5,0,1.5]){
+  const x=xpos(tick);chart.append(svgNode("line",{x1:x,x2:x,y1:58,y2:66,stroke:"#728984"}),textNode(x,83,fmt(tick)));
+ }
+ // 一张卡占一行，结果相同时点也能分辨。
+ values.forEach((v,j)=>{
+  const x=xpos(v),y=12+j*12;chart.append(svgNode("line",{x1:x,x2:x,y1:y,y2:62,stroke:colors[i],opacity:.25}));
+  chart.append(svgNode("circle",{cx:x,cy:y,r:j===chosen?6:4,fill:colors[i],stroke:j===chosen?"#182e32":"none","stroke-width":2}));
+ });
+ el("dots"+i).replaceChildren(chart);
+}
+function makeBins(values){
+ const bins=Array(26).fill(0);
+ for(const x of values){const idx=Math.min(25,Math.max(0,Math.floor((x+3)/.25)+1));bins[idx]++}
+ return bins;
+}
+function histogram(bins,top,i){
+ const chart=svgNode("svg",{viewBox:"0 0 360 148",role:"img","aria-label":"混合亮度直方图，纵向为样本数"});
+ const left=38,w=12,base=121,h=93;
+ chart.append(textNode(3,15,"计数","start"),textNode(34,35,String(top),"end"),
+              svgNode("line",{x1:left,y1:base-h,x2:350,y2:base-h,stroke:"#cbd8d0"}));
+ bins.forEach((n,j)=>chart.append(svgNode("rect",{x:left+j*w,y:base-n*h/top,width:w-1,height:n*h/top,fill:colors[i]})));
+ chart.append(svgNode("line",{x1:left,x2:350,y1:base,y2:base,stroke:"#637c76"}));
+ for(const [x,s] of [[left+w,"−3"],[left+13*w,"0"],[left+25*w,"3"]])chart.append(textNode(x,141,s));
+ el("hist"+i).replaceChildren(chart);
+}
+function render(){
+ const share=+el("share").value,mode=el("mode").value;
+ const cards=mode==="independent"?[[-1,-1],[-1,1],[1,-1],[1,1]]:[-1,1].map(s=>selectInputs(mode,s,s));
+ chosen=Math.min(chosen,cards.length-1);
+ el("shareText").textContent=fmt(share*100,4)+"%";
+ el("design").textContent={independent:"每枚硬币可取 −1 或 +1，两次独立。四张卡各占 1/4。点一张卡，读两栏的混合值。",fixed:"干净像素固定为 0.8，雪花可取 −1 或 +1。两张卡各占一半。",shared:"干净值和雪花总是同号。只留下两张卡，各占一半。这个改动用来检验独立假设。"}[mode];
+ el("choices").replaceChildren(...cards.map(([y,e],j)=>{
+  const button=document.createElement("button");button.type="button";button.textContent="("+sign(y)+", "+sign(e)+")";
+  button.setAttribute("aria-label","干净值 "+y+"，雪花 "+e);button.setAttribute("aria-pressed",j===chosen);
+  button.onclick=()=>{chosen=j;render();el("choices").children[j].focus()};return button;
+ }));
+ const scales=[[Math.sqrt(share),Math.sqrt(1-share)],[share,1-share]];
+ const allBins=[];
+ scales.forEach(([a,b],i)=>{
+  const x=cards.map(([y,e])=>a*y+b*e),s=stat(x),[y,e]=cards[chosen];
+  el("sum"+i).textContent=fmt(a)+" × ("+fmt(y)+") + "+fmt(b)+" × ("+fmt(e)+") = "+fmt(x[chosen]);
+  numberLine(x,i);
+  el("squares"+i).textContent="均值 "+fmt(s.avg)+"。各卡离均值的距离平方为 "+s.squares.map(n=>fmt(n)).join("、")+"。";
+  el("spread"+i).textContent="方差 = "+fmt(s.v);
+  const draws=data.pairs.map(([y,e])=>{const [signal,noise]=selectInputs(mode,y,e);return a*signal+b*noise});
+  const observed=stat(draws);allBins.push(makeBins(draws));
+  el("emp"+i).textContent="实测均值 "+fmt(observed.avg)+"，方差 "+fmt(observed.v)+"。理论方差 "+fmt(s.v)+"。";
+ });
+ const top=Math.max(...allBins[0],...allBins[1]);allBins.forEach((bins,i)=>histogram(bins,top,i));
+ el("axis").textContent="种子 "+data.seed+"，每栏 "+data.pairs.length.toLocaleString("zh-CN")+" 次。横轴为混合亮度，每格 0.25。最左及最右两格分别收集低于 −3 和不低于 3 的样本。方差使用全部原始数值。";
+ el("lesson").textContent={independent:"两项各自的方差都是 1，独立时混合方差为 a² + b²。开根号后，分给两项的方差份额恰好加回 1。",fixed:"反复给同一个像素加噪，只有雪花在变。固定像素把整团数平移，混合方差只剩噪声系数的平方 b²。",shared:"两个输入共用同一份随机数，混合亮度等于 (a+b) 乘它。方差变成 (a+b)²，包含额外的 2ab。"}[mode];
+ el("linkFlow").textContent="直线流匹配练习可以写成 x = t × 干净值 + (1−t) × 起始噪声。右栏取 t = "+fmt(share)+"。左栏同一个数记为累计信号保留量 A，用于计算加噪系数。";
+ el("cmd").textContent="python3 variance_lab.py --mode "+mode+" --share "+share+" --seed "+data.seed;
+}
+el("mode").onchange=()=>{chosen=0;render()};el("share").oninput=render;
+el("half").onclick=()=>{el("share").value=.5;render()};
+el("book").onclick=()=>{el("share").value=.64;el("mode").value="independent";chosen=0;render()};
+render();
+</script></body></html>

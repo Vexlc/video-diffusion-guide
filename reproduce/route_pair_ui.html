@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>同一份噪声，四段影片 · 从雪花到运动</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f7f7f0;color:#17373a;font:16px/1.7 "MiSans","Noto Sans CJK SC","Microsoft YaHei",sans-serif}main{max-width:1010px;margin:auto;padding:clamp(16px,4vw,50px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.35}h1{font-size:clamp(31px,5vw,56px);margin:.3em 0}h2{font-size:clamp(21px,3vw,30px);margin:1.4em 0 .35em}p{margin:.5em 0 1em}a{color:#00645d;text-underline-offset:3px}nav,.tools{display:flex;gap:10px 22px;align-items:center;flex-wrap:wrap}nav{font-size:.9em}.tools{margin:12px 0}label{font-weight:650}button,select,input{font:inherit;accent-color:#00665d}button,select{border:1px solid #44756c;border-radius:5px;background:white;color:inherit;padding:4px 9px}button{cursor:pointer}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}figure,.box{min-width:0;background:#fffdf8;border:1px solid #cad8cf;border-radius:6px;margin:0;padding:12px}.box p:last-child{margin-bottom:0}figure strong,figure small{display:block}figure small{color:#465e60;font-size:.88rem}.strip{display:block;width:100%;height:auto;margin:10px 0 4px}.frameview{display:flex;gap:12px;align-items:center}.projector{width:70px;height:auto;flex:none}.pathCanvas{display:block;width:100%;max-width:610px;height:auto}.nums,output,code{font-variant-numeric:tabular-nums}#worked{padding:12px 16px;background:#e8f0e7;border-left:4px solid #00675e}input[type=range]{vertical-align:middle;max-width:40vw}#batchState{display:block;margin:10px 0}code{overflow-wrap:anywhere}summary{cursor:pointer;color:#00645d}button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #ac542e;outline-offset:3px}@media(max-width:660px){.grid{grid-template-columns:1fr}.tools{gap:8px 13px}figure{padding:10px}}
+</style>
+<main>__NAV__
+<h1>同一份噪声，四段影片</h1>
+<p>每段只有六帧。请方块沿第 3 行走，先看扩散模型交出的两段影片，再看流匹配模型。把目标改成第 7 行之前，猜猜哪两段会跟着换行。</p>
+<div class="tools"><label>噪声种子 <select id="seed"></select></label><label>指定行 <select id="row"><option value="3">3（靠上）</option><option value="7">7（靠下）</option></select></label></div>
+<section id="matrix"><h2>哪一段听了位置提示？</h2><p>横读一条胶片，从左到右是帧 0 至 5。青块是生成结果，橙色虚线是指定行。六帧的中心都落在虚线上才算整段命中。</p>
+<div class="grid" id="films"></div>
+<div class="tools"><label>影片帧 <input id="frame" type="range" min="0" max="5" value="0"> <output id="frameNumber"></output></label><button id="play">播放六帧</button></div></section>
+<h2>训练时，这一格要猜什么？</h2>
+<p>只看首帧的纵坐标。我们用 −1 表示第 3 行，+1 表示第 7 行。出题时，干净值 y 和噪声 z 都已知。拖动进度，看看两位“出题老师”把什么交给网络，又拿什么给它打分。</p>
+<div class="tools"><label>生成进度 τ <input id="step" type="range" min="0" max="23" value="12"> <output id="stepNumber"></output></label></div>
+<p class="nums" id="known"></p><div class="grid"><div class="box"><strong>扩散 · 猜混合量 v</strong><p>x = a y + σ z，答案 v = a z − σ y。<br>a = sin(πτ/2)，σ = cos(πτ/2)。</p><b id="diffTicket"></b></div>
+<div class="box"><strong>直线流匹配 · 猜速度 u</strong><p>x = (1 − τ)z + τ y，答案 u = y − z。<br>这对起点和终点连成一条直线，速度恒定。</p><b id="flowTicket"></b></div></div>
+<h2>生成时，模型真的往哪走？</h2>
+<p>从同一个 z 出发，模型连续作答 24 次。下面跟踪所选影片的首帧纵坐标。此处的 x 是前面几步走到的位置。模型只能看到当前状态、进度，以及开启时的位置提示。</p>
+<label>查看这一次生成 <select id="chosen"><option value="diffusion:0">视频扩散 · 关闭提示</option><option value="diffusion:1">视频扩散 · 开启提示</option><option value="flow:0">流匹配 · 关闭提示</option><option value="flow:1" selected>流匹配 · 开启提示</option></select></label><p id="worked" class="nums"></p>
+<figure><canvas id="path" class="pathCanvas" width="610" height="190" role="img" aria-label="首帧纵坐标随24个生成步变化，比较模型实走的轨迹和给定终点的训练路径"></canvas><figcaption><small>青色实线连接模型实际走过的 25 个状态。橙色虚线是出题时用已知的 y 和 z 算出的参考路径。竖线对应所选进度。纵轴使用归一化的行坐标，第 3 行为 −1。</small></figcaption></figure>
+<details><summary>位置修正怎样接入两台生成器？</summary><p>每个基座一起读取六帧的 12 个坐标，学习后冻结。复制两层作为支路，让它额外读取首帧行号 c。在主干的特征 h 上加一份修正，得到 h′ = h + λ r(x,τ,c)，再预测 v 或 u。出口权重和偏置从零开始，训练后开启 λ 就能改变整段轨迹。这里用行号演示接线；讲义第 85–86 页展示原版视频项目怎样接收二维深度图。</p></details>
+<h2>换一批噪声，也会听提示吗？</h2>
+<p>64 份测试噪声各配第 3 行和第 7 行，共 128 道题。左右方向由生成器决定。训练数据只有上下两行、每行左右两个方向，考试换了噪声，路线仍是这四种。</p>
+<button id="batch">用本机权重重算 128 道题</button><output id="batchState" aria-live="polite"></output><button id="exception" hidden></button>
+<details><summary>用 Python 对答案</summary><p>在完整离线包的 reproduce 目录运行 <code>python3 route_pair.py --seed 1700 --row 3</code> 查看四段影片的六帧中心，运行 <code>python3 route_pair.py --cohort</code> 核对整批。两条命令只用标准库。</p></details>
+</main>
+<script>
+"use strict";
+const payload=__DATA__;
+const steps=24;
+const tasks=["diffusion","flow"];
+const nameOf={diffusion:"视频扩散",flow:"直线流匹配"};
+const el=id=>document.getElementById(id);
+const fmt=x=>Number(x.toFixed(4)).toFixed(4);
+const model={};
+for(const task of tasks){
+  model[task]={};
+  for(const [key,param] of Object.entries(payload.models[task])){
+    const bytes=Uint8Array.from(atob(param.data),c=>c.charCodeAt(0));
+    const view=new DataView(bytes.buffer);
+    const values=Float32Array.from({length:bytes.length/4},(_,i)=>view.getFloat32(4*i,true));
+    model[task][key]={values,shape:param.shape};
+  }
+}
+function affine(p,key,input){
+  const {values,shape}=p[key+".weight"];
+  const bias=p[key+".bias"]?.values;
+  const result=[];
+  for(let i=0;i<shape[0];i++){
+    let sum=0;
+    for(let j=0;j<shape[1];j++)sum+=values[i*shape[1]+j]*input[j];
+    result.push(sum+(bias?bias[i]:0));
+  }
+  return result;
+}
+function predict(task,x,t,row,gain){
+  const p=model[task], a=Math.sin(t*Math.PI/2), s=Math.cos(t*Math.PI/2);
+  const features=[...x,t,a,s];
+  let h=affine(p,"base.second",affine(p,"base.first",features).map(Math.tanh)).map(Math.tanh);
+  if(gain){
+    const hint=affine(p,"branch.hint",[(row-5)/2]);
+    const first=affine(p,"branch.first",features).map((v,i)=>Math.tanh(v+hint[i]));
+    const branch=affine(p,"branch.second",first).map(Math.tanh);
+    const residual=affine(p,"branch.exit",branch);
+    h=h.map((v,i)=>v+gain*residual[i]);
+  }
+  return affine(p,"base.head",h);
+}
+function advance(task,x,pred,k){
+  if(task==="flow")return x.map((v,i)=>v+pred[i]/steps);
+  const theta=k/steps*Math.PI/2, next=(k+1)/steps*Math.PI/2;
+  const a=Math.sin(theta),s=Math.cos(theta);
+  return x.map((v,i)=>Math.sin(next)*(a*v-s*pred[i])+Math.cos(next)*(s*v+a*pred[i]));
+}
+function solve(task,noise,row,gain){
+  const xs=[noise],preds=[];
+  for(let k=0;k<steps;k++){
+    const pred=predict(task,xs[k],k/steps,row,gain);
+    preds.push(pred);
+    xs.push(advance(task,xs[k],pred,k));
+  }
+  return {xs,preds};
+}
+function centers(x){
+  return Array.from({length:6},(_,f)=>[Math.floor(7+5*x[2*f]+.5),Math.floor(5+2*x[2*f+1]+.5)]);
+}
+let runs={},timer=null;
+function stop(){clearInterval(timer);timer=null;el("play").textContent="播放六帧"}
+function calculate(){
+  const z=payload.starts[+el("seed").value],row=+el("row").value;
+  for(const task of tasks)for(const gain of [0,1])runs[task+":"+gain]=solve(task,z,row,gain);
+  stop();paint();numbers();
+}
+function project(canvas,point,row){
+  const ctx=canvas.getContext("2d"),unit=5;
+  ctx.fillStyle="#e9efe7";ctx.fillRect(0,0,80,60);
+  ctx.strokeStyle="#aa4c2c";ctx.setLineDash([3,2]);ctx.beginPath();
+  ctx.moveTo(0,(row+.5)*unit);ctx.lineTo(80,(row+.5)*unit);ctx.stroke();
+  ctx.fillStyle="#00695f";ctx.fillRect((point[0]-1)*unit,(point[1]-1)*unit,3*unit,3*unit);
+}
+function paint(){
+  const row=+el("row").value,frame=+el("frame").value;
+  el("frameNumber").textContent=frame+" / 5";
+  for(const [key,run] of Object.entries(runs)){
+    const track=centers(run.xs[steps]);
+    const pic=document.getElementById("strip-"+key),ctx=pic.getContext("2d");
+    ctx.clearRect(0,0,pic.width,pic.height);
+    for(let f=0;f<6;f++){
+      const left=60*f+2,top=3,unit=3.4,w=16*unit,h=12*unit;
+      ctx.fillStyle="#e9efe7";ctx.fillRect(left,top,w,h);
+      ctx.save();ctx.beginPath();ctx.rect(left,top,w,h);ctx.clip();
+      ctx.strokeStyle="#aa4c2c";ctx.lineWidth=.8;ctx.setLineDash([3,2]);
+      ctx.beginPath();ctx.moveTo(left,top+unit*(row+.5));ctx.lineTo(left+w,top+unit*(row+.5));ctx.stroke();
+      const [x,y]=track[f];ctx.fillStyle="#00695f";ctx.fillRect(left+(x-1)*unit,top+(y-1)*unit,3*unit,3*unit);
+      ctx.restore();
+      if(f===frame){ctx.strokeStyle="#183b3b";ctx.lineWidth=1.7;ctx.strokeRect(left-1,top-1,w+2,h+2)}
+    }
+    const at=track[frame];
+    project(el("frame-"+key),at,row);
+    const description="帧 "+frame+" 中心 ("+at.join(", ")+")，"+(track.every(p=>p[1]===row)?"六帧全部命中":"有帧偏离目标行");
+    pic.setAttribute("aria-label","六帧中心依次为 "+track.map(p=>"("+p.join(",")+")").join("、"));
+    el("label-"+key).textContent=description;
+  }
+}
+function pathChart(run,task,z,y,selected){
+  const c=el("path"),ctx=c.getContext("2d");
+  const actual=run.xs.map(x=>x[1]);
+  const lesson=actual.map((_,k)=>{
+    const t=k/steps;
+    return task==="flow"?(1-t)*z+t*y:Math.sin(t*Math.PI/2)*y+Math.cos(t*Math.PI/2)*z;
+  });
+  const high=Math.ceil(Math.max(1,...actual,...lesson)),low=Math.floor(Math.min(-1,...actual,...lesson));
+  const px=k=>46+(c.width-70)*k/steps;
+  const py=v=>25+(c.height-62)*(high-v)/(high-low);
+  ctx.clearRect(0,0,c.width,c.height);ctx.font="16px sans-serif";
+  ctx.fillStyle="#415e5c";ctx.textAlign="right";
+  for(const v of [low,0,high]){
+    ctx.fillText(String(v),35,py(v)+5);ctx.strokeStyle="#d4ded6";ctx.beginPath();
+    ctx.moveTo(px(0),py(v));ctx.lineTo(px(steps),py(v));ctx.stroke();
+  }
+  ctx.textAlign="center";
+  for(const k of [0,12,24])ctx.fillText(k+"/24",px(k),c.height-10);
+  ctx.strokeStyle="#53656b";ctx.beginPath();ctx.moveTo(px(selected),py(high));ctx.lineTo(px(selected),py(low));ctx.stroke();
+  function plot(values,color,dashes){
+    ctx.strokeStyle=color;ctx.lineWidth=2;ctx.setLineDash(dashes);ctx.beginPath();
+    values.forEach((value,k)=>{if(k===0)ctx.moveTo(px(k),py(value));else ctx.lineTo(px(k),py(value))});
+    ctx.stroke();ctx.setLineDash([]);ctx.lineWidth=1;
+    ctx.fillStyle=color;ctx.beginPath();ctx.arc(px(selected),py(values[selected]),3.5,0,2*Math.PI);ctx.fill();
+  }
+  plot(lesson,"#aa4c2c",[6,4]);plot(actual,"#00695f",[]);
+}
+function numbers(){
+  const k=+el("step").value,t=k/steps,a=Math.sin(t*Math.PI/2),s=Math.cos(t*Math.PI/2);
+  const z=payload.starts[+el("seed").value][1], y=(+el("row").value-5)/2;
+  el("stepNumber").textContent=k+" / "+steps;
+  el("known").textContent="共同的原片 y = "+y+"，同一格雪花 z = "+fmt(z)+"，此刻 τ = "+fmt(t)+"。";
+  el("diffTicket").textContent="交给网络的 x ≈ "+fmt(a*y+s*z)+"，答案 v ≈ "+fmt(a*z-s*y);
+  el("flowTicket").textContent="交给网络的 x ≈ "+fmt((1-t)*z+t*y)+"，答案 u ≈ "+fmt(y-z);
+  const key=el("chosen").value,run=runs[key];
+  pathChart(run,key.split(":")[0],z,y,k);
+  const x=run.xs[k][1],p=run.preds[k][1],n=run.xs[k+1][1];
+  const rule=key.startsWith("flow")?"模型猜 u ≈ "+fmt(p)+"。下一格 x + u/24 ≈ "+fmt(n):
+    "模型猜 v ≈ "+fmt(p)+"。还原出 ŷ = a x − σ v ≈ "+fmt(a*x-s*p)+"、ẑ = σ x + a v ≈ "+fmt(s*x+a*p)+"。用下一刻的 a 和 σ 混合，得到 "+fmt(n);
+  el("worked").textContent="从进度 "+k+"/24 走到 "+(k+1)+"/24。当前 x ≈ "+fmt(x)+"，"+rule+"。";
+}
+for(let i=0;i<payload.starts.length;i++)el("seed").add(new Option(String(payload.firstSeed+i),String(i)));
+for(const task of tasks)for(const gain of [0,1]){
+  const key=task+":"+gain,fig=document.createElement("figure");
+  fig.innerHTML='<strong>'+nameOf[task]+' · '+(gain?"开启":"关闭")+'位置提示</strong><canvas class="strip" role="img" width="360" height="48" id="strip-'+key+'"></canvas><div class="frameview"><canvas class="projector" aria-hidden="true" width="80" height="60" id="frame-'+key+'"></canvas><small id="label-'+key+'"></small></div>';
+  el("films").append(fig);
+}
+for(const id of ["seed","row"])el(id).onchange=calculate;
+el("step").oninput=numbers;el("chosen").onchange=numbers;
+el("frame").oninput=()=>{stop();paint()};
+el("play").onclick=()=>{
+  if(timer!==null){stop();return}
+  el("frame").value=0;paint();el("play").textContent="暂停";
+  timer=setInterval(()=>{el("frame").value=+el("frame").value+1;paint();if(+el("frame").value===5)stop()},320);
+};
+el("batch").onclick=async()=>{
+  const button=el("batch"),output=el("batchState"),totals={diffusion:[0,0],flow:[0,0]};
+  let miss;
+  button.disabled=true;el("exception").hidden=true;
+  try{
+    for(const [i,z] of payload.starts.entries()){
+      for(const task of tasks){
+        const off=centers(solve(task,z,3,0).xs[steps]);
+        if(!miss&&![3,7].some(row=>off.every(p=>p[1]===row)))miss={i,task};
+        for(const row of [3,7]){
+          const on=centers(solve(task,z,row,1).xs[steps]);
+          totals[task][0]+=Number(off.every(p=>p[1]===row));
+          totals[task][1]+=Number(on.every(p=>p[1]===row));
+        }
+      }
+      if(i%4===0){output.textContent="已复算 "+(i+1)+" / "+payload.starts.length+" 份噪声";await new Promise(done=>setTimeout(done,0))}
+    }
+    const denominator=2*payload.starts.length;
+    output.textContent=tasks.map(task=>nameOf[task]+"关闭 "+totals[task][0]+"/"+denominator+"，开启 "+totals[task][1]+"/"+denominator).join("。")+"。";
+    if(miss){
+      const link=el("exception");
+      link.textContent="查看种子 "+(payload.firstSeed+miss.i)+" · "+nameOf[miss.task]+" 关闭提示后，两道题都没中";
+      link.hidden=false;
+      link.onclick=()=>{
+        el("seed").value=miss.i;el("row").value=7;el("frame").value=0;
+        el("chosen").value=miss.task+":0";calculate();el("matrix").scrollIntoView();
+      };
+    }
+  }finally{button.disabled=false}
+};
+calculate();
+</script></html>

@@ -1,0 +1,99 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>零出口的头两次训练 · 实验 J</title><style>
+*{box-sizing:border-box}body{margin:0;background:#edf2ed;color:#193540;font:16px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:900px;margin:auto;padding:clamp(12px,3vw,30px)}header,section{background:#fffdf8;padding:clamp(15px,3vw,25px);border:1px solid #ccd8cf;border-radius:8px;margin-bottom:14px}header{border-top:5px solid #00695f}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.38;margin:6px 0 10px}h1{font-size:clamp(28px,5vw,42px)}h2{font-size:clamp(21px,3vw,28px)}h3{font-size:17px;margin:13px 0 4px}p{margin:6px 0}nav,.controls,.maps{display:flex;align-items:center;flex-wrap:wrap;gap:7px 15px;margin:10px 0}.controls label{display:inline-flex;align-items:center;gap:6px}button,select{font:inherit;color:inherit;border:1px solid #92a89f;background:#fff;padding:3px 7px;border-radius:4px}button,summary{cursor:pointer}a,summary{color:#00685f}:focus-visible{outline:3px solid #b05229;outline-offset:2px}figure{margin:3px 0}.maps figure{text-align:center}.maps canvas{display:block;width:clamp(100px,18vw,146px);image-rendering:pixelated;margin:auto}figcaption,.note{color:#4b6065;font-size:14px}.maps .grid{cursor:crosshair}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:9px}.readout,.metrics div{border-left:4px solid #00685f;background:#e8f1e9;padding:8px 12px;font-variant-numeric:tabular-nums}.metrics .second,.warm{border-left-color:#a6502b;background:#f7ece0}.metrics b{display:block;font-size:19px}.metric-table{border-collapse:collapse;width:100%;margin:8px 0;font-variant-numeric:tabular-nums}.metric-table th,.metric-table td{padding:4px 6px;border-bottom:1px solid #d7e0d8;text-align:left}.terms{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:4px;padding:0;list-style:none}.terms li{padding:4px;background:#eef2ed;font-size:13px}code{overflow-wrap:anywhere}.math{font-family:"DejaVu Serif",serif}@media(max-width:530px){.maps{gap:6px 10px}.maps canvas{width:89px}.maps figcaption{font-size:12px}.metrics{grid-template-columns:1fr}.metric-table{font-size:13px}.metric-table th,.metric-table td{padding:3px}}
+</style><main><header><h1>零出口的头两次训练</h1><p>固定同一段带噪视频。先看接上支路会改变什么，再只挪动一帧的提示点，观察模型什么时候开始响应它。</p><nav><a href="#response">看挪点效果</a><a href="#weight">从一格算权重梯度</a><a href="#adjoint">看梯度如何返回</a>__J_LINK__</nav></header>
+<section id="response"><h2>预测变了，挪点也有用了吗？</h2><p>坐标按（列，行）读，帧、行、列都从 0 数。帧 2 的点从 (6,5) 移到 (10,5)，其余五帧的点、带噪输入和生成进度完全相同。两张差值图沿用当前选中的训练状态。</p><div class="controls"><label>已更新 <select id="stage"></select> 次</label><label>观察帧 <select id="f"></select></label><label>色阶 <select id="scale"><option value="fixed">同一行跨阶段共用</option><option value="zoom">放大当前阶段</option></select></label></div>
+<div class="maps"><figure><canvas id="oldPoint"></canvas><figcaption>原点图</figcaption></figure><figure><canvas id="newPoint"></canvas><figcaption>挪点后</figcaption></figure><figure><canvas id="baseline"></canvas><figcaption>原点图预测 − 基座</figcaption></figure><figure><canvas id="edited"></canvas><figcaption>新点图预测 − 原点图预测</figcaption></figure></div>
+<div class="metrics"><div>接入支路的六帧最大绝对差<b id="baseMax"></b></div><div class="second">挪点产生的六帧最大绝对差<b id="editMax"></b></div></div><p id="limits" class="note"></p><p id="meaning" class="readout"></p><p class="note">两幅差图量的都是扩散网络预测量 v 的变化。青色为正、棕色为负、淡色接近零。单次预测的差值和影片的像素亮度使用不同单位。</p></section>
+<section id="weight"><h2>一枚共享权重，怎样收到 6,912 份贡献？</h2><p>跟踪支路较粗的 1×1 卷积出口。该层有 32 个输入、32 个输出通道。下面开放其中各三个通道。第 1、2 批各有 24 段不同训练片，每段六帧，每帧粗网格有 6×8 格。</p><div class="controls"><label>训练批次 <select id="batch"></select></label><label>输出通道 o <select id="o"></select></label><label>输入通道 i <select id="i"></select></label><button id="reset">还原书中读数</button></div>
+<div class="controls"><label>样片 <select id="sample"></select></label><label>帧 <select id="frame"></select></label><label>行 <select id="row"></select></label><label>列 <select id="col"></select></label></div>
+<div class="maps"><figure><canvas id="h" class="grid"></canvas><figcaption>进入出口的特征 h</figcaption></figure><figure><canvas id="g" class="grid"></canvas><figcaption>出口收到的梯度 g</figcaption></figure><figure><canvas id="product" class="grid"></canvas><figcaption>每格的乘积 g × h</figcaption></figure></div>
+<p id="one" class="readout"></p><p class="note">点击任一网格可选格。三幅图各用自己的色阶，橙框在同一行列。g 已包含均方损失的平均系数。</p>
+<table class="metric-table"><thead><tr><th>加总范围</th><th>项数</th><th>带正负号的和</th></tr></thead><tbody id="sums"></tbody></table><p id="parameter" class="readout warm"></p>
+<details><summary>用两次真实损失检查导数</summary><p id="finite"></p><p>所有其他参数和这批题固定，只把所选权重调到 W−0.0001 和 W+0.0001，用双精度分别重算整个网络的均方损失。两次损失之差除以 0.0002，得到中央差分估计。</p></details></section>
+<section id="adjoint"><h2>同一个出口，怎样把梯度传给前面的特征？</h2><p>固定当前训练批次的<b>样片 0</b>。位置与输入通道沿用上一节，可用下面的控件切换。每一项都是一个输出通道送回来的梯度乘上对应权重。</p>
+<div class="controls"><label>训练批次 <select id="backBatch"></select></label><label>输入通道 <select id="backI"></select></label><label>帧 <select id="backF"></select></label><label>行 <select id="backR"></select></label><label>列 <select id="backC"></select></label></div><p id="returned" class="readout"></p>
+<details><summary>展开 32 项带符号的乘积</summary><ul class="terms" id="terms"></ul></details><p id="norms"></p><p class="note">这里追踪的粗特征只送入这个出口。训练时基座参数保持冻结，损失仍能穿过基座的解码层，把 g 送到支路。</p>
+<details><summary>在终端复算</summary><p>在解压包的 <code>reproduce</code> 目录执行 <code id="cmd"></code>。只需 Python 标准库。要从随包基座重跑两次 Adam 更新，可用安装了 PyTorch 的 Python 执行 <code>python3 gate_training.py --out replay/gates</code>。</p></details></section></main>
+<script type="application/json" id="data">__GATES__</script><script>
+'use strict';
+const el=id=>document.getElementById(id),data=JSON.parse(el('data').textContent),val=id=>Number(el(id).value);
+function options(id,count,first=0){for(let i=first;i<first+count;i++)el(id).add(new Option(i,i))}
+for(const r of data.response)el('stage').add(new Option(r.updates,r.updates));
+for(const id of ['batch','backBatch'])options(id,2,1);
+for(const id of ['o','i','backI'])options(id,3);
+for(const id of ['f','frame','row','backF','backR'])options(id,6);
+for(const id of ['col','backC'])options(id,8);options('sample',24);
+const cache=new WeakMap();
+function floats(spec){
+ if(!cache.has(spec)){
+  const bytes=Uint8Array.from(atob(spec.data),ch=>ch.charCodeAt(0)),dv=new DataView(bytes.buffer);
+  cache.set(spec,Float32Array.from({length:bytes.length/4},(_,i)=>dv.getFloat32(4*i,true)));
+ }
+ return cache.get(spec);
+}
+const fmt=x=>x===0?'0':Math.abs(x)<.001?x.toExponential(4):Number(x.toPrecision(6)).toString();
+function heat(canvas,arr,w,h,limit,cell){
+ const side=10;canvas.width=w*side;canvas.height=h*side;
+ const ctx=canvas.getContext('2d');
+ for(let k=0;k<arr.length;k++){
+  const ratio=limit===0?0:Math.min(1,Math.abs(arr[k])/limit),tone=arr[k]<0?[173,73,44]:[0,105,93];
+  const rgb=[239,241,232].map((v,c)=>Math.round(v+ratio*(tone[c]-v)));
+  ctx.fillStyle='rgb('+rgb.join(',')+')';ctx.fillRect((k%w)*side,Math.floor(k/w)*side,side,side);
+ }
+ if(cell){ctx.strokeStyle='#d88d21';ctx.lineWidth=2;ctx.strokeRect(cell[0]*side+1,cell[1]*side+1,side-2,side-2)}
+}
+function drawResponse(){
+ const r=data.response.find(s=>s.updates===val('stage')),f=val('f'),zoom=el('scale').value==='zoom';
+ const start=f*192,base=floats(r.base),a=floats(r.a),b=floats(r.b);
+ const limits=['base_max','edit_max'].map(key=>zoom?r[key]:Math.max(...data.response.map(s=>s[key])));
+ for(let j=0;j<2;j++){
+  const point=data.points[j][f],v=Array(192).fill(0);v[point[1]*16+point[0]]=1;
+  heat(el(j?'newPoint':'oldPoint'),v,16,12,1);
+ }
+ const piece=(v,q)=>Array.from({length:192},(_,i)=>v[start+i]-q[start+i]);
+ heat(el('baseline'),piece(a,base),16,12,limits[0]);heat(el('edited'),piece(b,a),16,12,limits[1]);
+ el('baseMax').textContent=fmt(r.base_max);el('editMax').textContent=fmt(r.edit_max);
+ el('limits').textContent='观察帧 '+f+'。接入差图色阶上限 '+fmt(limits[0])+'；挪点差图色阶上限 '+fmt(limits[1])+'。本帧挪点后的平均绝对差为 '+fmt(r.mean_by_frame[f])+'。';
+ el('meaning').textContent=r.updates===0?'出口权重与偏置全为零，两种提示都复现同一基座预测。':r.updates===1?'出口已更新，副本自己的图像特征可以改动预测；点图入口仍全零，挪点不会改变输出。':r.updates===2?'第二批梯度到达点图入口。最大挪点差约 0.0000527，读作五点二七乘十的负五次方。选择“放大当前阶段”，可看见它落在哪几格。':'训练结束后的随包权重现在读得出这处路标的改变。';
+}
+const bindings={backBatch:'batch',backI:'i',backF:'frame',backR:'row',backC:'col'};
+function gradients(){
+ const batch=data.batches[val('batch')-1],i=val('i'),o=val('o'),s=val('sample'),f=val('frame'),y=val('row'),x=val('col');
+ for(const [other,id] of Object.entries(bindings))el(other).value=el(id).value;
+ const h=floats(batch.h),g=floats(batch.g),start=(s*6+f)*48,point=start+y*8+x;
+ let total=0,oneSample=0,oneFrame=0;
+ const hs=[],gs=[],terms=[];
+ for(let n=0;n<24*6*48;n++){
+  const a=h[n*3+i],b=g[n*3+o],v=a*b;total+=v;
+  if(Math.floor(n/288)===s)oneSample+=v;
+  if(n>=start&&n<start+48){oneFrame+=v;hs.push(a);gs.push(b);terms.push(v)}
+ }
+ for(const [key,arr] of [['h',hs],['g',gs],['product',terms]])heat(el(key),arr,8,6,Math.max(...arr.map(Math.abs)),[x,y]);
+ el('one').textContent='框内：h = '+fmt(h[point*3+i])+'，g = '+fmt(g[point*3+o])+'，g × h = '+fmt(terms[y*8+x])+'。';
+ el('sums').replaceChildren();
+ for(const [scope,n,sum] of [['当前帧',48,oneFrame],['当前样片',288,oneSample],['整批，此 W 的梯度',6912,total]]){
+  const tr=document.createElement('tr');for(const v of [scope,n,fmt(sum)]){const td=document.createElement('td');td.textContent=v;tr.append(td)}el('sums').append(tr);
+ }
+ el('parameter').textContent='W['+o+','+i+'] 更新前 '+fmt(batch.before[o][i])+'。PyTorch 自动微分 '+fmt(batch.dw[o][i])+'；Adam 更新后 '+fmt(batch.after[o][i])+'。';
+ const [lo,hi,slope]=batch.finite[o][i];el('finite').textContent='L(W−δ) = '+lo.toFixed(15)+'，L(W+δ) = '+hi.toFixed(15)+'，差分斜率 = '+fmt(slope)+'。';
+ const index=(f*6+y)*8+x,up=floats(batch.all_g0),direct=floats(batch.returned0)[index*3+i];
+ el('terms').replaceChildren();let back=0;
+ for(let ch=0;ch<32;ch++){
+  const v=batch.before[ch][i]*up[index*32+ch];back+=v;
+  const li=document.createElement('li');li.textContent='通道 '+ch+'：'+fmt(v);el('terms').append(li);
+ }
+ el('returned').textContent='样片 0、帧 '+f+'、行 '+y+'、列 '+x+'。32 项 W × g 相加 = '+fmt(back)+'；自动微分得到 '+fmt(direct)+'。';
+ el('norms').textContent='本批点图入口全部参数的梯度长度 '+fmt(batch.norms.hint)+'，粗出口的梯度长度 '+fmt(batch.norms.coarse)+'。梯度长度汇总整层参数，格内的数只属于这个位置。';
+ el('cmd').textContent='python3 gate_lesson.py ../control-lab --batch '+val('batch')+' --output '+o+' --channel '+i+' --sample '+s+' --frame '+f+' --row '+y+' --col '+x;
+}
+for(const id of ['stage','f','scale'])el(id).onchange=drawResponse;
+for(const id of ['batch','o','i','sample','frame','row','col'])el(id).onchange=gradients;
+for(const [other,id] of Object.entries(bindings))el(other).onchange=()=>{el(id).value=el(other).value;gradients()};
+for(const id of ['h','g','product'])el(id).onclick=e=>{
+ const b=el(id).getBoundingClientRect();
+ el('row').value=Math.max(0,Math.min(5,Math.floor(6*(e.clientY-b.top)/b.height)));
+ el('col').value=Math.max(0,Math.min(7,Math.floor(8*(e.clientX-b.left)/b.width)));gradients();
+};
+function reset(){for(const [k,v] of Object.entries({batch:1,o:0,i:0,sample:0,frame:2,row:2,col:3}))el(k).value=v;gradients()}
+el('reset').onclick=reset;el('stage').value=1;el('f').value=2;drawResponse();reset();
+</script></html>

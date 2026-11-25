@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>从雪花到运动 · 从这里开始</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#edf3ef;color:#18353c;font:17px/1.7 "MiSans","Microsoft YaHei",sans-serif}main{max-width:950px;margin:auto;padding:clamp(18px,4vw,48px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.3}h1{font-size:clamp(36px,7vw,60px);margin:10px 0}h2{font-size:23px;margin:0}a{color:#00665b;text-underline-offset:4px}.mark{font-weight:700;letter-spacing:.1em;color:#00665b}.intro{max-width:690px}.first{background:#fffdf7;border-left:5px solid #00695f;padding:18px 22px;margin:15px 0}.first img{width:100%;max-width:640px;display:block;margin:10px 0}.go{display:inline-block;background:#00665b;color:white;padding:8px 15px;border-radius:4px;text-decoration:none}.go:focus-visible{outline:3px solid #ab4c2a;outline-offset:3px}.routes{display:grid;gap:14px;margin:24px 0}section{background:#fff;border-left:4px solid #00665b;padding:16px 22px}section p{margin:7px 0 0}small{color:#496266}code{overflow-wrap:anywhere}details{background:#fcf7e9;padding:12px 16px}summary{cursor:pointer;font-weight:700}
+.pagefind{padding:12px 16px;margin:12px 0 16px;background:#fff;border-left:4px solid #00665b}.pagefind label{font-weight:650}.pagefind div{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:5px}.pagefind input,.pagefind button{font:inherit;padding:5px 9px;border:1px solid #71938a;border-radius:3px}.pagefind input{min-width:100px;flex:1;max-width:350px}.pagefind button{background:#00665b;color:white;cursor:pointer}
+</style><body><main><div class="mark">离线学习包　/　从这里开始</div><h1>从雪花到运动</h1>
+<p class="intro">用一段六帧方块影片学视频扩散、流匹配与空间控制。可以先看图、跟算一格，再用本机浏览器自己生成。</p>
+<section class="first"><h2>同一份噪声，方块能换个起点吗？</h2><img src="flow-hint/first-films.svg" alt="同一份噪声和向右指令，方块分别从第 3 行和第 7 行出发"><p>横着看一排，方块怎样运动？上下比较，什么变了？跟着这段影片出一道去噪题、算一次速度更新，再亲手挪动首帧提示点。</p><p><a class="go" href="flow-hint/reading.html">跟一段方块学三件事</a>　<a href="flow-hint/first-film.html">生成我的第一段影片</a>　<a href="video-diffusion-guide.pdf">读中文 PDF</a></p></section>
+<p><a href="pair-lab/index.html"><b>同一份噪声，四段影片</b></a>　给扩散和流匹配各接一条位置支路，然后只改首帧行号。对应 PDF 第 87 页。</p>
+<p><a href="video-diffusion-lab.html#studyMap"><b>按问题找图、公式与代码</b></a>　·　<a href="starter-lab/index.html#python">用自己的 Python 画出四张图</a>　·　<a href="starter-lab/index.html#noise">先在浏览器试一道去噪题</a></p>
+<form class="pagefind" action="page-index.html" method="get"><label for="page-query">从 PDF 找本页的实验与源码</label><div><input name="q" type="search" id="page-query" placeholder="输入页码或术语，例如 31、CFG"><button>查找</button></div></form>
+<p><a href="page-index.html#symbols">按符号找公式</a>，从 ε、σ、v 或 λ 跳到书中的例题。</p>
+<details><summary>按问题找实验</summary>
+<p><b>增强文字引导，等于增强深度控制吗？</b> <a href="depth-lab/guidance.html">在同一组橙球短片上只换一个参数，查看采样器实际收到的数</a>（第 15 页）。</p>
+<p><b>只改一张深度图，下一帧的球会换颜色吗？</b> <a href="depth-lab/index.html">播放作者版 ControlVideo 生成的五帧短片，核对颜色和解码器实际读到的修正</a>（第 85–86 页）。</p>
+<p><b>给像素和雪花各分一份方差，要分别乘多少？</b> <a href="prediction-lab/variance.html">用四张题卡算出方差 1，再固定一格车身，看看为什么变成 0.36</a>（第 7 页）。</p>
+<p><b>连续加两次雪花，可以一步算完吗？</b> <a href="prediction-lab/forward.html">沿一格车身算一次，再筛选 4,096 对读数</a>（第 7、81–82 页）。</p>
+<p><b>只问四次速度，方块还能走对吗？</b> <a href="flow-hint/first-film.html#budget">在同一份噪声上生成三排对照</a>，再看<a href="flow-hint/solver-scores.html">224 段影片的成对成绩</a>。</p>
+<p><b>只算 6 步，影片会变短吗？</b> <a href="pixel-lab/timing.html">比较 6 步和 24 步的成片，再把同一卷影片放快一倍</a>（第 6 页）。也可以<a href="pixel-lab/two-clocks.html">逐帧查看 24 次更新的原始录像</a>。</p>
+<p><b>公式里的数字从哪里来？</b> 用<a href="prediction-lab/index.html">一个像素的三种答案</a>算一次，再看<a href="prediction-lab/posterior.html">同一格雪花的两种来历</a>，用出题记录检验最好的猜测。还可以<a href="prediction-lab/reverse-step.html">把同一格交给两种采样器</a>，看下一层的亮度。</p>
+<p><b>雪花怎样变成连续六帧？</b> 先<a href="video-diffusion-lab.html#labC">看小车为什么会跳</a>，再<a href="pixel-lab/index.html">回放真实像素网络</a>。</p>
+<p><b>末组的一个数加 1，中间两帧能收到多少？</b> <a href="dit-lab/message.html">从方块原片选出收发两块，核对一次真实注意力加权</a>（第 13、48 页）。</p>
+<p><b>只换输入帧 0，帧 3 会知道吗？</b> <a href="pixel-lab/temporal-shift.html">沿三处跨帧连接追踪一个数</a>，再用六乘六的格子表对答案。</p>
+<p><b>方块往右，模型给的速度怎么会是负的？</b> <a href="flow-hint/playback.html">倒放一次，再重新生成向左片，比较速度、中心和像素</a>。也可<a href="flow-hint/motion.html#times">沿两只钟看同一屏幕坐标</a>。</p>
+<p><b>训练标签各指各的方向，模型该听谁的？</b> <a href="flow-lab/training-tickets.html">翻训练题、猜速度、数过门人数</a>。</p>
+<p><b>第一次接开源调度器，该怎样对答案？</b> <a href="scheduler-lab/index.html">拿一个像素和一格潜码，核对库返回的数字</a>（第 79–80 页）。</p>
+<p><b>扩散的 v 能当成直线速度吗？</b> <a href="pixel-lab/path-clock.html">把一格像素换算两次，再比较四排实际生成的影片</a>（第 75–77 页）。</p>
+<p><b>流匹配怎样给噪声指路？</b> 先<a href="flow-lab/index.html">在路口拖动位置</a>，再<a href="video-diffusion-lab.html#latentBook">看速度怎样作用到视频潜码</a>。</p>
+<p><b>提示放在前半程或后半程，方块会走到哪里？</b> <a href="flow-hint/first-film.html#when">生成四排控制时段对照</a>，再<a href="flow-hint/window-scores.html#paired">逐帧查 224 题的早晚成绩</a>（第 83–84 页）。</p>
+<p><b>一个点为什么会改变邻帧？</b> <a href="control-lab/edit-points.html">亲手挪点，打开网络里的加号</a>。</p>
+<p><b>一张点图和一个方向标签，各怎样控制视频？</b> <a href="flow-hint/index.html#movies">固定同一份噪声，先挪首帧点，再交换左右</a>。</p>
+<p><b>读真实项目，第一行看什么？</b> <a href="hunyuan-lab/index.html">拆开 HunyuanVideo 的尺寸与时间表</a>，让一个调度器步骤走给你看。</p></details><div class="routes">
+<section><small>起步　/　PDF 02–20</small><h2><a href="video-diffusion-lab.html">先看图，再动一个旋钮</a></h2><p>让一辆车被雪花淹没，让一团点分成两队，再比较逐帧生成与整段生成。可在<a href="video-diffusion-lab.html#walkthrough">第一课的四个小实验</a>逐题预测、揭晓和跟算。</p></section>
+<section><small>进阶　/　PDF 21–28</small><h2><a href="workshop/index.html">训练一张速度表，做一个公平对照</a></h2><p>比较收过多少道练习题的模型，观察错一帧的遮罩，或者固定一份雪花把两种采样器各重跑 96 次。只用标准库便能重算。</p></section>
+<section><small>动手训练　/　PDF 29–33</small><h2><a href="pixel-lab/index.html">看一台神经网络自己把像素画出来</a></h2><p>从八个固定起点里任选一个，比较训练前与训练后、逐帧与跨帧。看完样片，再用全部 96 段的分数检查直觉。附小模型权重。</p></section>
+<section><small>条件控制　/　PDF 34–37</small><h2><a href="control-lab/index.html">只画两个点，能指挥方块拐向另一边吗？</a></h2><p>给同一台视频网络一个起点、两个端点或整条路线，播放成对的结果。也可以<a href="control-lab/gate-training.html">重放前两步训练</a>，看点图从哪一次更新开始起作用（第 73–74 页）。</p></section>
+<section><small>流匹配　/　PDF 38–41</small><h2><a href="flow-lab/index.html">谁给噪声指路？一步能不能学会？</a></h2><p>站在路口读三个速度箭头，跟随一个点走完全程，再把老师的终点打乱，看看一步学生学到了什么。</p></section>
+<section><small>视频潜空间　/　PDF 42–46</small><h2><a href="latent-lab/index.html">亲手改一个潜变量，看哪两帧改变</a></h2><p>六帧压成 72 个数。选一格、拖动数值，让真实训练过的解码器在浏览器里重画，再比较直接抽噪声与经过流匹配的影片。</p></section>
+<section><small>条件 Transformer　/　PDF 47–51</small><h2><a href="dit-lab/index.html">固定雪花，交换“向左”和“向右”</a></h2><p>逐头展开 18 个视频块的注意力，手算一步 CFG，再比较全段是否服从方向指令。</p></section>
+<section><small>综合实验　/　PDF 18、66–72</small><h2><a href="flow-hint/index.html">从一个点出发，生成六帧向右移动的方块</a></h2><p>关掉位置支路，再打开它。逐格看相同噪声生成的两段片，沿着一个隐藏特征追到下一步速度，最后检查 224 段留出影片。</p></section><section><small>开源模型实测　/　PDF 85–86</small><h2><a href="depth-lab/index.html">从一张深度图追到五帧彩色影片</a></h2><p>只在帧 2 挪球，播放打开和关闭控制的两组成片。点同一格，量 RGB 差异，再核对首次预测里的一次特征加法。</p></section></div>
+<details><summary>我想在终端里复现，最少需要什么？</summary><p>进入 <code>reproduce</code> 目录。基础实验：<code>python3 reproduce.py</code>；进阶工坊：<code>python3 workshop.py</code>。它们都只用标准库。</p><p>可选的神经网络实验需 PyTorch；安装后运行 <code>python pixel_lab.py --device cpu --replay ../pixel-lab/weights.pt</code>，即可从已有权重重新生成，无需下载外部模型。详细说明见同目录的 README.md。</p></details>
+</main></body></html>

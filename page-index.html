@@ -1,0 +1,1752 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>按页找实验 · 从雪花到运动</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#edf3ef;color:#17383d;font:17px/1.68 "MiSans","Microsoft YaHei",sans-serif}main{max-width:920px;margin:auto;padding:clamp(14px,4vw,40px)}h1{font:700 clamp(32px,6vw,52px)/1.2 "Noto Serif CJK SC",serif;margin:12px 0}a{color:#00665b;text-underline-offset:3px}header p{margin:8px 0}form{background:white;border-top:3px solid #00695e;padding:clamp(12px,2.5vw,20px);margin:16px 0 6px}label{display:block;font-weight:650}.field,nav,.examples{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.field{margin:7px 0}.field input{flex:1 1 150px;min-width:80px;padding:7px 10px}button,input{font:inherit}button,.primary,.examples a{border:1px solid #77948d;border-radius:4px;color:inherit;background:#fff;padding:4px 10px;cursor:pointer}.field button,.primary{background:#00685c;color:white;text-decoration:none}.examples a{font-size:14px;color:#006257;text-decoration:none}.examples{margin-top:9px}.status{font-size:15px;color:#395c5b;margin:10px 0}.card{background:#fff;margin:8px 0;border:1px solid #ccdcd4;border-radius:5px}.card>summary{font-weight:650;padding:12px 15px;cursor:pointer}.card[open]{border-left:4px solid #00685c}.page{font-variant-numeric:tabular-nums;color:#00685c;margin-right:7px}.body{padding:0 clamp(12px,3vw,23px) 12px}.part{color:#536c68;font-size:14px;margin:0}.formula{font-weight:650;padding:8px 11px;background:#edf4ec}.action{margin:9px 0}nav{gap:9px 18px}details.code{margin:13px 0 2px;padding-top:10px;border-top:1px solid #d6e0d8}.code summary{cursor:pointer}.code p{font-size:15px}.code pre{max-height:365px;overflow:auto;padding:10px 12px;color:#e5f2ee;background:#19393d;border-radius:4px;font:14px/1.55 "DejaVu Sans Mono",monospace}.code code{overflow-wrap:anywhere}.code pre code{overflow-wrap:normal}.empty{padding:14px 16px;background:#fff5da}.empty p{margin-top:0}button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible,pre:focus-visible{outline:3px solid #bd6a2f;outline-offset:2px}[hidden]{display:none!important}
+#symbols{margin:12px 0;padding:10px 14px;background:#fff;border:1px solid #ccdcd4;border-radius:4px}#symbols summary{font-weight:bold;cursor:pointer}#symbols dl{display:grid;grid-template-columns:minmax(62px,auto) 1fr;gap:9px 14px}#symbols dt{color:#00695f;font-weight:700}#symbols dd{margin:0}#symbols a{white-space:nowrap}</style></head><body><main><header><a href="index.html">返回离线学习包</a>　<a href="video-diffusion-lab.html#studyMap">按主题阅读</a><h1>按页找实验</h1><p>输入讲义页码，或搜一个术语。展开问题就能对照算式、动手操作，再读实现这一步的 Python 函数。</p></header>
+<form id="lookup" role="search"><label for="query">页码或关键词</label><div class="field"><input id="query" name="q" type="search" placeholder="例如 31、流匹配、CFG" autocomplete="off"><button>查找</button></div>
+<div class="examples"><a href="#p8">8　还原一个像素</a><a href="#p10">10　合成两支箭头</a><a href="#p16">16　零出口的第一步</a><button type="button" id="all">全部页</button></div></form>
+<details id="symbols"><summary>按符号找公式</summary><dl><dt>ε、ε̂</dt><dd>没有帽子的 ε 是这道题抽到的噪声。ε̂ 是网络看过带噪输入后给出的猜测。 <a href="#p8">第 8 页</a> · <a href="#p81">第 81 页</a></dd><dt>β、A、σ</dt><dd>βᵢ 记一次新加噪声的方差。Aₖ 记截至该层的信号幅度平方，σₖ = √(1−Aₖ) 是累计噪声幅度。 <a href="#p7">第 7 页</a> · <a href="#p81">第 81 页</a></dd><dt>f、k、τ</dt><dd>f 数播放的帧，k 数扩散噪声级，τ 数噪声到数据的生成进度。读 σ 时还要看它所在的路径。 <a href="#p6">第 6 页</a> · <a href="#p80">第 80 页</a></dd><dt>v、u</dt><dd>圆弧扩散中的 v = aε−σy，直线流匹配的训练标签 u = y−ε。两者各自对应一种路径与时钟。 <a href="#p54">第 54 页</a> · <a href="#p75">第 75 页</a></dd><dt>z</dt><dd>直线训练题的 z 是随机起点。VAE 章节的 z 是编码器给一段视频取的潜码；读它从哪一步产生。 <a href="#p10">第 10 页</a> · <a href="#p42">第 42 页</a></dd><dt>w、λ</dt><dd>本书 CFG 的 w 放大两次预测的差。ControlNet 的 λ 调整加进基座的特征修正。 <a href="#p15">第 15 页</a> · <a href="#p16">第 16 页</a></dd></dl></details>
+<p class="status" id="status" aria-live="polite">共 89 页，可直接展开问题。</p>
+<div id="empty" class="empty" hidden><p>没有找到这一页或术语。可输入 1–89 的整数，也可试试“采样”“潜空间”或“控制”。</p><button type="button" id="clear">清除搜索</button></div>
+<section id="cards" aria-label="讲义问题"><details class="card" id="p1" data-search="入门 第一次生成 浏览器 视频 流匹配 flow matching ControlNet flow_hint.custom_sample">
+<summary><span class="page">01</span> <span>从雪花到运动</span></summary>
+<div class="body"><p class="part">入门地图</p><p class="formula">72 个噪声数 → 24 次速度更新 → 解码成 6 帧</p>
+<p class="action">点“生成六帧”，再沿用上一段设置移到第 7 行。查看实测中心，两次对照只改起点。</p><nav aria-label="第 1 页的阅读与实验入口"><a class="primary" href="flow-hint/first-film.html">打开浏览器生成器</a>
+<a href="video-diffusion-lab.html#chapter-1">读图文版</a> <a href="video-diffusion-guide.pdf#page=1">翻到 PDF 第 1 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 flow_hint.py --device cpu --replay ../flow-hint/branch.pt --point 7 3 --direction right --strength 1 --noise-seed 9317 --out replay/my-first-film</code></pre><p>实际源码 <a href="reproduce/flow_hint.py">flow_hint.py</a>，从第 282 行开始。</p>
+<pre tabindex="0"><code>@torch.no_grad()
+def custom_sample(root,checkpoint,out,device,point,direction,strength,noise_seed):
+    from pixel_report import contact
+    setup(device,SEED)
+    vae,base,branch,saved=load_trained(root,checkpoint,device)
+    initial=device_noise((1,*LATENT_SHAPE),stream(noise_seed),device)
+    ids=torch.tensor([LEFT if direction==&quot;left&quot; else RIGHT],device=device)
+    last=solve(base,branch,initial,ids,torch.tensor([point],device=device),strength)
+    video=vae.decode(saved[&quot;mean&quot;].to(device)+saved[&quot;spread&quot;].to(device)*last)
+    centers=brightest_centers(video.cpu())[0].tolist()
+    title=f&quot;首帧点 ({point[0]}, {point[1]})，{&#x27;向左&#x27; if direction==&#x27;left&#x27; else &#x27;向右&#x27;}，控制强度 {strength:g}&quot;
+    out.mkdir(parents=True,exist_ok=True)
+    (out/&quot;sample.svg&quot;).write_text(contact(title,[(&quot;24 步成片&quot;,byte_clips(video)[0])]),encoding=&quot;utf-8&quot;)
+    print(json.dumps({&quot;point&quot;:point,&quot;direction&quot;:direction,&quot;strength&quot;:strength,&quot;noise_seed&quot;:noise_seed,
+                      &quot;measured_centers&quot;:centers},ensure_ascii=False),flush=True)</code></pre></details></div></details>
+<details class="card" id="p2" data-search="加噪 噪声预测 diffusion 扩散 reproduce.run_noise">
+<summary><span class="page">02</span> <span>同样猜错一点，哪辆车会变暗更多？</span></summary>
+<div class="body"><p class="part">读图卡 A / 加噪与还原</p><p class="formula">x = a·y + σ·ε</p>
+<p class="action">固定同一个像素，增大噪声步，再比较预测噪声偏差相同时还原错了多少。</p><nav aria-label="第 2 页的阅读与实验入口"><a class="primary" href="video-diffusion-lab.html#labA">打开实验 A</a>
+<a href="video-diffusion-lab.html#storyA">读图文版</a> <a href="video-diffusion-guide.pdf#page=2">翻到 PDF 第 2 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 reproduce.py</code></pre><p>实际源码 <a href="reproduce/reproduce.py">reproduce.py</a>，从第 47 行开始。</p>
+<pre tabindex="0"><code>def run_noise(seed, bias=0.15):
+    draw = normal_draw(seed + 34171)
+    original = [clean_pixel(row, col) for row in range(30) for col in range(48)]
+    noise = [draw() for pixel in original]
+    rows = []
+    for step in (20, 60, 90):
+        signal, sigma = schedule(step / 100)
+        mixed = [signal * clean + sigma * eps for clean, eps in zip(original, noise)]
+        restored = [(pixel - sigma * (eps + bias)) / signal for pixel, eps in zip(mixed, noise)]
+        rows.append((step, mixed, restored))
+    return original, rows</code></pre></details></div></details>
+<details class="card" id="p3" data-search="流匹配 flow matching 欧拉 reproduce.integrate">
+<summary><span class="page">03</span> <span>同一群人，只问一次路能站成两队吗？</span></summary>
+<div class="body"><p class="part">读图卡 B / 流匹配</p><p class="formula">x下一步 = x + Δt·v</p>
+<p class="action">把生成进度拉到 1，保持种子不动，依次用 1 步和 32 步，看点云是否分成两队。</p><nav aria-label="第 3 页的阅读与实验入口"><a class="primary" href="video-diffusion-lab.html#labB">打开实验 B</a>
+<a href="video-diffusion-lab.html#storyB">读图文版</a> <a href="video-diffusion-guide.pdf#page=3">翻到 PDF 第 3 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 reproduce.py</code></pre><p>实际源码 <a href="reproduce/reproduce.py">reproduce.py</a>，从第 69 行开始。</p>
+<pre tabindex="0"><code>def integrate(seed, end_time, steps):
+    draw = normal_draw(seed + 811)
+    points = [[draw(), draw()] for index in range(144)]
+    dt = end_time / steps
+    for step in range(steps):
+        for point in points:
+            speed = velocity(point, step * dt)
+            for axis in range(2):
+                point[axis] += dt * speed[axis]
+    return points</code></pre></details></div></details>
+<details class="card" id="p4" data-search="视频扩散 DDIM 时序 reproduce.sample_video">
+<summary><span class="page">04</span> <span>暂停看都没错，为什么播放就露馅？</span></summary>
+<div class="body"><p class="part">读图卡 C / 视频一致性</p><p class="formula">整段运动取决于帧与帧的联合分布</p>
+<p class="action">看同一份雪花生成的两排胶片，比较相邻车心的位移是否持续同向。</p><nav aria-label="第 4 页的阅读与实验入口"><a class="primary" href="video-diffusion-lab.html#labC">打开实验 C</a>
+<a href="video-diffusion-lab.html#storyC">读图文版</a> <a href="video-diffusion-guide.pdf#page=4">翻到 PDF 第 4 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 reproduce.py</code></pre><p>实际源码 <a href="reproduce/reproduce.py">reproduce.py</a>，从第 91 行开始。</p>
+<pre tabindex="0"><code>def sample_video(seed, joint):
+    paths = [[direction*(2*frame/7-1) + offset for frame in range(8)]
+             for direction in (-1, 1) for offset in (-0.35, 0.35)]
+    draw = normal_draw(seed + 6697)
+    state = [draw() for frame in range(8)]
+    for step in range(24):
+        signal, sigma = schedule(1-step/24)
+        next_signal, next_sigma = schedule(1-(step+1)/24)
+        if joint:
+            clean = predict_clean(state, paths, signal, sigma)
+        else:
+            clean = [predict_clean([value], [[path[frame]] for path in paths], signal, sigma)[0]
+                     for frame, value in enumerate(state)]
+        noise = [(value-signal*target) / sigma for value, target in zip(state, clean)]
+        state = [next_signal*target + next_sigma*eps for target, eps in zip(clean, noise)]
+    return state</code></pre></details></div></details>
+<details class="card" id="p5" data-search="ControlNet 控制 条件支路 reproduce.use_control">
+<summary><span class="page">05</span> <span>会听路标的模型，也会听错路标</span></summary>
+<div class="body"><p class="part">读图卡 D / 条件支路</p><p class="formula">新预测 = 原预测 + λ·支路输出</p>
+<p class="action">保持训练和强度相同，对比准时的路旗与迟一帧的路旗。</p><nav aria-label="第 5 页的阅读与实验入口"><a class="primary" href="video-diffusion-lab.html#labD">打开实验 D</a>
+<a href="video-diffusion-lab.html#storyD">读图文版</a> <a href="video-diffusion-guide.pdf#page=5">翻到 PDF 第 5 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 reproduce.py</code></pre><p>实际源码 <a href="reproduce/reproduce.py">reproduce.py</a>，从第 135 行开始。</p>
+<pre tabindex="0"><code>def use_control(seed, weights):
+    draw = normal_draw(seed + 941)
+    guide = [-1, -0.7, -0.15, 0.65, 1, 0.55, -0.25, -0.8]
+    truth = [value + 0.25 * draw() for value in guide]
+    observed = [0.8 * value + 0.6 * draw() for value in truth]
+    base = [(value - 0.6*BASE_WEIGHT*value)/0.8 for value in observed]
+    weight_input, weight_guide = weights
+
+    def correct(condition):
+        return [start - 0.6/0.8 * (weight_input*value + weight_guide*mark)
+                for start, value, mark in zip(base, observed, condition)]
+
+    return truth, guide, base, correct(guide), correct([guide[0]] + guide[:-1])</code></pre></details></div></details>
+<details class="card" id="p6" data-search="生成步 影片帧 采样步数 帧率 帧数 FPS 时钟 片长 动画 f、k、τ frame timestep tau 影片帧 生成进度 调度器 timing_report.measure">
+<summary><span class="page">06</span> <span>少算几步，影片会变短吗？</span></summary>
+<div class="body"><p class="part">基础 / 两个时钟</p><p class="formula">生成进度 = 已走步数 / 总步数；片长 = 影片帧数 / 每秒帧数</p>
+<p class="action">固定起点 1，读帧 2 的橙框。再把帧率从 3 调成 6，核对亮度和播放时间。</p><nav aria-label="第 6 页的阅读与实验入口"><a class="primary" href="pixel-lab/timing.html#sheets">打开生成步数与播放速度</a>
+<a href="video-diffusion-lab.html#chapter-6">读图文版</a> <a href="video-diffusion-guide.pdf#page=6">翻到 PDF 第 6 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 timing_report.py --case 1 --frame 2 --row 5 --col 10 --fps 3</code></pre><p>实际源码 <a href="reproduce/timing_report.py">timing_report.py</a>，从第 29 行开始。</p>
+<pre tabindex="0"><code>def measure(data, case, frame, row, col, fps):
+    _, count, height, width = data[&quot;shape&quot;]
+    if not (0 &lt;= frame &lt; count and 0 &lt;= row &lt; height and 0 &lt;= col &lt; width and fps &gt; 0):
+        raise ValueError(&quot;帧号、采样位置或帧率越界&quot;)
+    movies = {key:frames(data,key,case) for key in (&quot;partial&quot;,&quot;6&quot;,&quot;24&quot;)}
+    different = [sum(a!=b for a,b in zip(s,l)) for s,l in zip(movies[&quot;6&quot;],movies[&quot;24&quot;])]
+    return {&quot;起点&quot;:case, &quot;选定坐标 [帧,行,列]&quot;:[frame,row,col],
+            &quot;各片此处亮度&quot;:{key:film[frame][row*width+col] for key,film in movies.items()},
+            &quot;两段成片各帧不同格数&quot;:different, &quot;总不同格数&quot;:sum(different),
+            &quot;总格数&quot;:count*height*width, &quot;帧起始秒&quot;:str(Fraction(frame,fps)),
+            &quot;末帧起始秒&quot;:str(Fraction(count-1,fps)), &quot;片长秒&quot;:str(Fraction(count,fps))}</code></pre></details></div></details>
+<details class="card" id="p7" data-search="方差 均值 高斯 正态 标准差 根号 概率 系数 题卡 条件统计 加噪 variance DDPM Flow Matching β、A、σ beta alpha_bar alphas_cumprod sigma 方差 幅度 累积 variance_lab.variance">
+<summary><span class="page">07</span> <span>加噪时，为什么要给 0.64 开平方？</span></summary>
+<div class="body"><p class="part">扩散 / 正向</p><p class="formula">x = √A·y + √(1−A)·ε，方差 = 每个结果离均值的距离平方的平均</p>
+<p class="action">取配比 64%，先用四张独立题卡复算方差 1，再固定像素 0.8，点雪花为 −1 的卡，读出 0.04 和方差 0.36。</p><nav aria-label="第 7 页的阅读与实验入口"><a class="primary" href="prediction-lab/variance.html#cards">打开四张题卡算出加噪方差</a>
+<a href="video-diffusion-lab.html#chapter-7">读图文版</a> <a href="video-diffusion-guide.pdf#page=7">翻到 PDF 第 7 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 variance_lab.py --share 0.64 --mode independent</code></pre><p>实际源码 <a href="reproduce/variance_lab.py">variance_lab.py</a>，从第 25 行开始。</p>
+<pre tabindex="0"><code>def variance(values):
+    &quot;&quot;&quot;总体方差：每个结果减平均数，差的平方再取平均。&quot;&quot;&quot;
+    center = fmean(values)
+    return fmean((x - center) ** 2 for x in values)</code></pre></details></div></details>
+<details class="card" id="p8" data-search="score 得分函数 后验 条件平均 贝叶斯 扩散 去噪 噪声估计 ε、ε̂ epsilon eps noise 噪声 真值 预测 合并 posterior_lab.estimate">
+<summary><span class="page">08</span> <span>没有人标注雪花，答案从哪来？</span></summary>
+<div class="body"><p class="part">扩散 / 学习目标</p><p class="formula">最优噪声猜测 = 各种可能噪声按条件概率的平均</p>
+<p class="action">固定本帧为 0.04，先遮住邻帧，然后跟踪同一部位。比较车身的权重和最优噪声猜测。</p><nav aria-label="第 8 页的阅读与实验入口"><a class="primary" href="prediction-lab/posterior.html#evidence">打开两种来源的去噪实验</a>
+<a href="video-diffusion-lab.html#chapter-8">读图文版</a> <a href="video-diffusion-guide.pdf#page=8">翻到 PDF 第 8 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 posterior_lab.py --mode hidden</code></pre><p>实际源码 <a href="reproduce/posterior_lab.py">posterior_lab.py</a>，从第 38 行开始。</p>
+<pre tabindex="0"><code>def estimate(x, mode=&quot;hidden&quot;, neighbor=.64):
+    &quot;&quot;&quot;给定实际可用的观测，按两种标签的条件概率，分别算干净值和噪声的均值。&quot;&quot;&quot;
+    prior=neighbor_prior(mode,neighbor)
+    z_body,z_road=noise_for(x,BODY),noise_for(x,BACKGROUND)
+    body,road=prior*phi(z_body),(1-prior)*phi(z_road)
+    p=normalize(body,road)
+    noise=p*z_body+(1-p)*z_road
+    return {&quot;body&quot;:p, &quot;clean&quot;:p*BODY+(1-p)*BACKGROUND, &quot;noise&quot;:noise,
+            &quot;score&quot;:-noise/SIGMA, &quot;density&quot;:(body+road)/SIGMA,
+            &quot;loss&quot;:p*(z_body-noise)**2+(1-p)*(z_road-noise)**2}</code></pre></details></div></details>
+<details class="card" id="p9" data-search="DDPM DDIM 扩散 反向采样 条件分布 方差 均值 reverse_pixel.draws">
+<summary><span class="page">09</span> <span>同一格雪花重走三次，谁会改变？</span></summary>
+<div class="body"><p class="part">扩散 / 反向采样</p><p class="formula">DDPM 的下一格 = μ + sξ，确定性 DDIM 的下一格 = aⱼ ŷ + σⱼ ε̂</p>
+<p class="action">固定当前读数 0.04 和下一层 0.96，将 ξ 从 −1 换到 +1，只观察三种下一格。</p><nav aria-label="第 9 页的阅读与实验入口"><a class="primary" href="prediction-lab/reverse-step.html#start">打开反向一步实验</a>
+<a href="video-diffusion-lab.html#chapter-9">读图文版</a> <a href="video-diffusion-guide.pdf#page=9">翻到 PDF 第 9 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 reverse_pixel.py --x 0.04 --target 0.96</code></pre><p>实际源码 <a href="reproduce/reverse_pixel.py">reverse_pixel.py</a>，从第 39 行开始。</p>
+<pre tabindex="0"><code>def draws(step, uniform, fresh_noise):
+    &quot;&quot;&quot;三种走法共用输入和去噪预测；两种随机方法共用同一个新高斯数。&quot;&quot;&quot;
+    center=step[&quot;body&quot;] if uniform&lt;step[&quot;p&quot;] else step[&quot;back&quot;]
+    offset=step[&quot;std&quot;]*fresh_noise
+    return {&quot;exact&quot;:center+offset,&quot;ddpm&quot;:step[&quot;mean&quot;]+offset,&quot;ddim&quot;:step[&quot;ddim&quot;]}</code></pre></details></div></details>
+<details class="card" id="p10" data-search="flow matching 流匹配 z latent noise 潜码 噪声起点 first_steps.crossing">
+<summary><span class="page">10</span> <span>不猜雪花，改为告诉点往哪走</span></summary>
+<div class="body"><p class="part">流匹配 / 教学标签</p><p class="formula">v* 是给定位置与时间后，速度标签的条件平均</p>
+<p class="action">先对照 PDF 的两支等权箭头，再让窗口中的训练题统一猜 0，最后点“采用样本平均”。</p><nav aria-label="第 10 页的阅读与实验入口"><a class="primary" href="flow-lab/training-tickets.html#guess">打开训练题实验</a>
+<a href="video-diffusion-lab.html#chapter-10">读图文版</a> <a href="video-diffusion-guide.pdf#page=10">翻到 PDF 第 10 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 first_steps.py</code></pre><p>实际源码 <a href="reproduce/first_steps.py">first_steps.py</a>，从第 16 行开始。</p>
+<pre tabindex="0"><code>def crossing(upper_probability):
+    &quot;&quot;&quot;两道半程相交的题，分别给出向右上、向右下的标签。&quot;&quot;&quot;
+    upper, lower = (4, 2), (4, -2)
+    p = upper_probability
+    mean = tuple(p*a + (1-p)*b for a,b in zip(upper, lower))
+
+    def loss(guess):
+        upper_error = sum((g-u)**2 for g,u in zip(guess,upper))
+        lower_error = sum((g-u)**2 for g,u in zip(guess,lower))
+        return p*upper_error + (1-p)*lower_error
+
+    return mean, loss(upper), loss(mean)</code></pre></details></div></details>
+<details class="card" id="p11" data-search="流匹配 flow matching 欧拉 reproduce.integrate">
+<summary><span class="page">11</span> <span>箭头不等于终点：为什么要多走几步？</span></summary>
+<div class="body"><p class="part">流匹配 / 数值积分</p><p class="formula">Δx = Δt·v(x,t)</p>
+<p class="action">只换查询次数，观察从一步到多步时终点怎样变化。把进度停在中途，看局部箭头。</p><nav aria-label="第 11 页的阅读与实验入口"><a class="primary" href="video-diffusion-lab.html#labB">打开实验 B</a>
+<a href="video-diffusion-lab.html#chapter-11">读图文版</a> <a href="video-diffusion-guide.pdf#page=11">翻到 PDF 第 11 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 reproduce.py</code></pre><p>实际源码 <a href="reproduce/reproduce.py">reproduce.py</a>，从第 69 行开始。</p>
+<pre tabindex="0"><code>def integrate(seed, end_time, steps):
+    draw = normal_draw(seed + 811)
+    points = [[draw(), draw()] for index in range(144)]
+    dt = end_time / steps
+    for step in range(steps):
+        for point in points:
+            speed = velocity(point, step * dt)
+            for axis in range(2):
+                point[axis] += dt * speed[axis]
+    return points</code></pre></details></div></details>
+<details class="card" id="p12" data-search="score 得分函数 后验 条件平均 贝叶斯 扩散 去噪 噪声估计 posterior_lab.slope_from_density">
+<summary><span class="page">12</span> <span>扩散和流匹配，是不是同一件事？</span></summary>
+<div class="body"><p class="part">桥梁 / 统一记号</p><p class="formula">score = ∂ₓ log p(x | 已知线索) = −ε̂ / σ</p>
+<p class="action">选择跟踪同一部位，把邻帧从 +0.64 调为 −0.44；比较黑短线的斜率与噪声给出的数。</p><nav aria-label="第 12 页的阅读与实验入口"><a class="primary" href="prediction-lab/posterior.html#score">打开两种来源的去噪实验</a>
+<a href="video-diffusion-lab.html#chapter-12">读图文版</a> <a href="video-diffusion-guide.pdf#page=12">翻到 PDF 第 12 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 posterior_lab.py --x 0.04 --neighbor 0.64 --mode shared</code></pre><p>实际源码 <a href="reproduce/posterior_lab.py">posterior_lab.py</a>，从第 50 行开始。</p>
+<pre tabindex="0"><code>def slope_from_density(x,mode,neighbor,step=.0001):
+    &quot;&quot;&quot;保持邻帧线索不动，分别求当前读数左右的密度，再计算对数的割线斜率。&quot;&quot;&quot;
+    right=estimate(x+step,mode,neighbor)[&quot;density&quot;]
+    left=estimate(x-step,mode,neighbor)[&quot;density&quot;]
+    return (math.log(right)-math.log(left))/(2*step)</code></pre></details></div></details>
+<details class="card" id="p13" data-search="视频骨架 自注意力 attention Transformer Q K V softmax 值向量 跨帧 权重 贡献 潜块 attention_report.readout">
+<summary><span class="page">13</span> <span>中间两帧怎么读到最后两帧？</span></summary>
+<div class="body"><p class="part">视频 / 网络骨架</p><p class="formula">一块送来的贡献 = 注意力权重 × V。收进来的消息等于 18 份贡献之和。</p>
+<p class="action">固定查询块 8、源块 13，只给 V 加 1。再切到两层只读本组，分别量一次消息与最终速度的变化。</p><nav aria-label="第 13 页的阅读与实验入口"><a class="primary" href="dit-lab/message.html#route">打开跟一条跨帧消息</a>
+<a href="video-diffusion-lab.html#chapter-13">读图文版</a> <a href="video-diffusion-guide.pdf#page=13">翻到 PDF 第 13 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 attention_report.py --query 8 --source 13 --mode full</code></pre><p>实际源码 <a href="reproduce/attention_report.py">attention_report.py</a>，从第 24 行开始。</p>
+<pre tabindex="0"><code>def readout(data, query=8, source=13, mode=&quot;full&quot;):
+    if not (0 &lt;= source &lt; 18 and 0 &lt;= query &lt; 18):
+        raise ValueError(&quot;块号范围是 0 到 17&quot;)
+    row = data[&quot;runs&quot;][mode]
+    weights, values = row[&quot;weights&quot;][query], row[&quot;values&quot;]
+    products = [a*v for a, v in zip(weights, values)]
+    return {**similarity(row, query, source, mode), &quot;weight&quot;: weights[source], &quot;value&quot;: values[source], &quot;contribution&quot;: products[source],
+            &quot;group_sums&quot;: [fsum(products[i:i+6]) for i in (0, 6, 12)], &quot;sum&quot;: fsum(products),
+            &quot;received&quot;: row[&quot;messages&quot;][query], &quot;received_plus_one&quot;: row[&quot;edited_messages&quot;][source][query],
+            &quot;velocity&quot;: row[&quot;velocity&quot;][query], &quot;velocity_plus_one&quot;: row[&quot;edited_velocity&quot;][source][query]}</code></pre></details></div></details>
+<details class="card" id="p14" data-search="视频扩散 DDIM 时序 reproduce.predict_clean">
+<summary><span class="page">14</span> <span>八张好看的图，为什么拼不成好视频？</span></summary>
+<div class="body"><p class="part">视频 / 联合采样</p><p class="formula">联合预测取决于整段的观测</p>
+<p class="action">固定噪声和步数，对比独立预测与整段预测的车心折线。</p><nav aria-label="第 14 页的阅读与实验入口"><a class="primary" href="video-diffusion-lab.html#labC">打开实验 C</a>
+<a href="video-diffusion-lab.html#chapter-14">读图文版</a> <a href="video-diffusion-guide.pdf#page=14">翻到 PDF 第 14 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 reproduce.py</code></pre><p>实际源码 <a href="reproduce/reproduce.py">reproduce.py</a>，从第 81 行开始。</p>
+<pre tabindex="0"><code>def predict_clean(state, candidates, signal, sigma):
+    &quot;&quot;&quot;比较四条候选轨迹，越符合带噪观测的轨迹获得越高权重。&quot;&quot;&quot;
+    logits = [-sum((value-signal*target)**2 for value, target in zip(state, path))
+              / (2*sigma**2) for path in candidates]
+    peak = max(logits)
+    weights = [math.exp(logit-peak) for logit in logits]
+    return [sum(weight * position for weight, position in zip(weights, column)) / sum(weights)
+            for column in zip(*candidates)]</code></pre></details></div></details>
+<details class="card" id="p15" data-search="CFG ControlNet ControlVideo 负面提示 空文字 深度 引导 guidance scale 条件 橙球 w、λ cfg guidance scale lambda controlnet 控制强度 cfg_report.guided">
+<summary><span class="page">15</span> <span>同一个橙球，文字和深度各管哪一步？</span></summary>
+<div class="body"><p class="part">条件 / 文本引导</p><p class="formula">深度修正 λr → U-Net，噪声预测 g = g参照 + w(g正面 − g参照)</p>
+<p class="action">固定深度为 1，提高文字引导。选择采样步 0 和帧 2，读取两组相同的正面、参照预测，再看合成值。</p><nav aria-label="第 15 页的阅读与实验入口"><a class="primary" href="depth-lab/guidance.html#films">打开文字引导与深度控制对照</a>
+<a href="video-diffusion-lab.html#chapter-15">读图文版</a> <a href="video-diffusion-guide.pdf#page=15">翻到 PDF 第 15 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 cfg_report.py --case w7.5-d1 --step 0 --frame 2 --col 16 --row 12</code></pre><p>实际源码 <a href="reproduce/cfg_report.py">cfg_report.py</a>，从第 27 行开始。</p>
+<pre tabindex="0"><code>def guided(ref, pos, w):
+    &quot;&quot;&quot;按作者 FP16 张量的运算顺序，在普通 CPU 上复算一个分量。&quot;&quot;&quot;
+    if ref is None:
+        return pos
+    difference = half(pos - ref)
+    return half(ref + half(w * difference))</code></pre></details></div></details>
+<details class="card" id="p16" data-search="ControlNet 控制 w、λ cfg guidance scale lambda controlnet 控制强度 first_steps.gate_updates">
+<summary><span class="page">16</span> <span>为什么增加一条从零开始的支路？</span></summary>
+<div class="body"><p class="part">控制 / ControlNet</p><p class="formula">ŷ = 基座 + Wr + b</p>
+<p class="action">先在终端算出零出口的第一步，再到已训练的支路，把粗、细出口一起关掉，检查预测与基座的差。</p><nav aria-label="第 16 页的阅读与实验入口"><a class="primary" href="control-lab/edit-points.html#featureMath">打开提示点实验</a>
+<a href="video-diffusion-lab.html#chapter-16">读图文版</a> <a href="video-diffusion-guide.pdf#page=16">翻到 PDF 第 16 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 first_steps.py</code></pre><p>实际源码 <a href="reproduce/first_steps.py">first_steps.py</a>，从第 30 行开始。</p>
+<pre tabindex="0"><code>def gate_updates():
+    &quot;&quot;&quot;冻结基座；固定支路输入 r，观察出口更新前后，损失能否传到 r。&quot;&quot;&quot;
+    base, r, target = 0.2, 2.0, 1.0
+    weight, bias, learning_rate = 0.0, 0.0, 0.1
+    for step in range(2):
+        prediction = base + weight*r + bias
+        error = prediction-target                  # 损失为 (预测−目标)²/2
+        grad_weight, grad_bias = error*r, error
+        grad_r = error*weight
+        yield step, weight, bias, prediction, grad_weight, grad_r
+        weight -= learning_rate*grad_weight
+        bias -= learning_rate*grad_bias</code></pre></details></div></details>
+<details class="card" id="p17" data-search="ControlNet 控制 条件支路 reproduce.train_control">
+<summary><span class="page">17</span> <span>在本地亲手训练一条条件支路</span></summary>
+<div class="body"><p class="part">控制 / 可训练的小模型</p><p class="formula">最小化预测噪声与真实噪声的平方误差</p>
+<p class="action">把训练更新次数从零调高，分别看有提示和错位提示下的位置误差。</p><nav aria-label="第 17 页的阅读与实验入口"><a class="primary" href="video-diffusion-lab.html#labD">打开实验 D</a>
+<a href="video-diffusion-lab.html#chapter-17">读图文版</a> <a href="video-diffusion-guide.pdf#page=17">翻到 PDF 第 17 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 reproduce.py</code></pre><p>实际源码 <a href="reproduce/reproduce.py">reproduce.py</a>，从第 112 行开始。</p>
+<pre tabindex="0"><code>def train_control(updates):
+    &quot;&quot;&quot;只训练两个初始为零的权重，老模型 BASE_WEIGHT 不动。&quot;&quot;&quot;
+    draw = normal_draw(40323)
+    examples = []
+    for index in range(2048):
+        guide = draw()
+        clean = guide + 0.25 * draw()
+        eps = draw()
+        observed = 0.8*clean + 0.6*eps
+        examples.append((observed, guide, eps))
+    weight_input, weight_guide = 0.0, 0.0
+    for step in range(updates):
+        grad_input, grad_guide = 0.0, 0.0
+        for observed, guide, eps in examples:
+            guess = BASE_WEIGHT*observed + weight_input*observed + weight_guide*guide
+            error = guess - eps
+            grad_input += 2 * error * observed
+            grad_guide += 2 * error * guide
+        weight_input -= 0.16 * grad_input / len(examples)
+        weight_guide -= 0.16 * grad_guide / len(examples)
+    return weight_input, weight_guide</code></pre></details></div></details>
+<details class="card" id="p18" data-search="留出练习 半程 原片 速度 实走 flow matching 扩散 ControlNet reading_route.readings">
+<summary><span class="page">18</span> <span>走到半程，模型为什么偏离练习的直线？</span></summary>
+<div class="body"><p class="part">整合 / 端到端配方</p><p class="formula">练习题 x = (1−t)z + ty，生成时 x下一步 = x当前 + u/24</p>
+<p class="action">停在第 12 步，比较直线练习和模型实走的数值。走到第 24 步，只把点从第 3 行挪到第 7 行。</p><nav aria-label="第 18 页的阅读与实验入口"><a class="primary" href="flow-hint/reading.html">打开跟一段方块学三件事</a>
+<a href="video-diffusion-lab.html#chapter-18">读图文版</a> <a href="video-diffusion-guide.pdf#page=18">翻到 PDF 第 18 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 reading_route.py --row 3 --step 12</code></pre><p>实际源码 <a href="reproduce/reading_route.py">reading_route.py</a>，从第 90 行开始。</p>
+<pre tabindex="0"><code>def readings(case, k):
+    &quot;&quot;&quot;沿同一生成进度读取两种训练题面、对应标签和自由生成的下一步。&quot;&quot;&quot;
+    z, y = case[&quot;x&quot;][0], case[&quot;y&quot;]
+    t = k/STEPS
+    a, sigma = math.sin(math.pi*t/2), math.cos(math.pi*t/2)
+    return {&quot;k&quot;:k, &quot;t&quot;:t, &quot;a&quot;:a, &quot;sigma&quot;:sigma, &quot;z&quot;:z, &quot;y&quot;:y,
+            &quot;diffusion&quot;:a*y+sigma*z, &quot;noise_label&quot;:z, &quot;linear&quot;:(1-t)*z+t*y,
+            &quot;velocity_label&quot;:y-z, &quot;teacher_prediction&quot;:case[&quot;guesses&quot;][k],
+            &quot;component_squared_error&quot;:(case[&quot;guesses&quot;][k]-(y-z))**2, &quot;generated&quot;:case[&quot;x&quot;][k],
+            &quot;speed&quot;:case[&quot;v&quot;][k] if k&lt;STEPS else None, &quot;next&quot;:case[&quot;x&quot;][k+1] if k&lt;STEPS else None}</code></pre></details></div></details>
+<details class="card" id="p19" data-search="初学 入门 自测 扩散 flow matching 视频 ControlNet first_walk.lesson">
+<summary><span class="page">19</span> <span>看完四幅图，试着预测一次改动</span></summary>
+<div class="body"><p class="part">实践 / 自测</p><p class="formula">绝对误差 = |预测值 − 参考值|</p>
+<p class="action">先预测，再打开四组对照。在 D 题选种子 21，看看平均误差往哪边变。</p><nav aria-label="第 19 页的阅读与实验入口"><a class="primary" href="video-diffusion-lab.html#walkthrough">打开四道入门练习</a>
+<a href="video-diffusion-lab.html#chapter-19">读图文版</a> <a href="video-diffusion-guide.pdf#page=19">翻到 PDF 第 19 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 first_walk.py --seed 17</code></pre><p>实际源码 <a href="reproduce/first_walk.py">first_walk.py</a>，从第 27 行开始。</p>
+<pre tabindex="0"><code>def lesson(card, seed):
+    if card==&quot;A&quot;:
+        clean, perfect = run_noise(seed,bias=0)
+        _, biased = run_noise(seed,bias=.15)
+        witness = 15*48+24
+        signal, sigma = schedule(.9)
+        mixed = perfect[-1][1][witness]
+        return {&quot;truth&quot;:clean[witness],&quot;mixed&quot;:mixed,&quot;signal&quot;:signal,&quot;sigma&quot;:sigma,
+                &quot;noise&quot;:(mixed-signal*clean[witness])/sigma,
+                &quot;before&quot;:perfect[-1][2][witness],&quot;after&quot;:biased[-1][2][witness]}
+    if card==&quot;B&quot;:
+        single = integrate(seed,1,1)
+        many = integrate(seed,1,32)
+        initial = integrate(seed,0,1)[0]
+        speed = velocity(initial,0)[0]
+        return {&quot;start_x&quot;:initial[0],&quot;initial_speed_x&quot;:speed,&quot;first_small_x&quot;:initial[0]+speed/32,
+                &quot;total&quot;:len(many),&quot;before&quot;:sum(abs(x)&gt;1 for x,y in single),
+                &quot;after&quot;:sum(abs(x)&gt;1 for x,y in many)}
+    if card==&quot;C&quot;:
+        single, joint = (sample_video(seed,joint) for joint in (False,True))
+        return {&quot;before&quot;:direction_changes(single),&quot;after&quot;:direction_changes(joint),
+                &quot;single&quot;:single,&quot;joint&quot;:joint}
+    if card==&quot;D&quot;:
+        result = road_trial(seed,train_control(80))
+        return {&quot;before&quot;:result[&quot;aligned_mae&quot;],&quot;after&quot;:result[&quot;delayed_mae&quot;],
+                &quot;frame2&quot;:{&quot;truth&quot;:result[&quot;truth&quot;][2],&quot;aligned&quot;:result[&quot;aligned&quot;][2],&quot;delayed&quot;:result[&quot;delayed&quot;][2]},
+                &quot;per_frame_change&quot;:result[&quot;difference&quot;]}
+    raise ValueError(&quot;题号为 A、B、C 或 D&quot;)</code></pre></details></div></details>
+<details class="card" id="p20" data-search=" flow_coupling.training_draws">
+<summary><span class="page">20</span> <span>带着问题读原文</span></summary>
+<div class="body"><p class="part">索引 / 原始论文</p><p class="formula">直线训练题 u = y − z</p>
+<p class="action">在原论文页找 Flow Matching 的概率路径，再展开本页源码，看合成练习如何独立抽取两端。</p><nav aria-label="第 20 页的阅读与实验入口"><a class="primary" href="video-diffusion-lab.html#chapter-20">打开原论文导读</a>
+<a href="video-diffusion-lab.html#chapter-20">读图文版</a> <a href="video-diffusion-guide.pdf#page=20">翻到 PDF 第 20 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 flow_tickets.py</code></pre><p>实际源码 <a href="reproduce/flow_coupling.py">flow_coupling.py</a>，从第 71 行开始。</p>
+<pre tabindex="0"><code>def training_draws(seed, count):
+    &quot;&quot;&quot;以与实验 K 相同的顺序抽题；sign 是数据分量标签。&quot;&quot;&quot;
+    rng = random.Random(seed+101)
+    for _ in range(count):
+        z = rng.gauss(0, 1)
+        sign = rng.choice((-1, 1))
+        y = sign*CENTER + SPREAD*rng.gauss(0, 1)
+        yield z, y, sign</code></pre></details></div></details>
+<details class="card" id="p21" data-search="flow matching 流匹配 workshop_models.training_pair">
+<summary><span class="page">21</span> <span>让模型自己填一张“路牌表”</span></summary>
+<div class="body"><p class="part">小模型工坊 / 出训练题</p><p class="formula">题面 (x,t)，标签 y−z</p>
+<p class="action">在工坊切换训练阶段。先看零训练的路牌表，再看增加训练题后采样的速度。</p><nav aria-label="第 21 页的阅读与实验入口"><a class="primary" href="workshop/index.html#fm">打开工坊 E</a>
+<a href="video-diffusion-lab.html#chapter-21">读图文版</a> <a href="video-diffusion-guide.pdf#page=21">翻到 PDF 第 21 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 workshop.py</code></pre><p>实际源码 <a href="reproduce/workshop_models.py">workshop_models.py</a>，从第 20 行开始。</p>
+<pre tabindex="0"><code>def training_pair(rng):
+    clean = position_pair(rng)
+    noise = [rng.gauss(0, 1) for axis in range(2)]
+    time = rng.random()
+    middle = [(1-time)*start + time*end for start, end in zip(noise, clean)]
+    return middle, time, [end-start for start, end in zip(noise, clean)]</code></pre></details></div></details>
+<details class="card" id="p22" data-search="flow matching 流匹配 workshop_models.decode">
+<summary><span class="page">22</span> <span>生成器学会了运动，还是只画对了一辆车？</span></summary>
+<div class="body"><p class="part">小模型工坊 / 检验学习</p><p class="formula">位移 = 末帧位置 − 首帧位置</p>
+<p class="action">看学得的运动系数与生成影片，再对照模型是否同时覆盖左右两种运动。</p><nav aria-label="第 22 页的阅读与实验入口"><a class="primary" href="workshop/index.html#fm">打开工坊 E</a>
+<a href="video-diffusion-lab.html#motionStudy">读图文版</a> <a href="video-diffusion-guide.pdf#page=22">翻到 PDF 第 22 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 workshop.py</code></pre><p>实际源码 <a href="reproduce/workshop_models.py">workshop_models.py</a>，从第 64 行开始。</p>
+<pre tabindex="0"><code>def decode(point):
+    center, motion = point
+    return [center + motion*(2*frame/7-1) for frame in range(8)]</code></pre></details></div></details>
+<details class="card" id="p23" data-search="注意力 attention workshop_models.attention">
+<summary><span class="page">23</span> <span>注意力是在找同一辆车，还是找相似的块？</span></summary>
+<div class="body"><p class="part">小模型工坊 / 注意力</p><p class="formula">注意力权重 = softmax(查询与键的相似度)</p>
+<p class="action">把原来好辨认的对象改成相似外观，检查同一查询那一行分给谁的权重增加。</p><nav aria-label="第 23 页的阅读与实验入口"><a class="primary" href="workshop/index.html#att">打开工坊 G</a>
+<a href="video-diffusion-lab.html#chapter-23">读图文版</a> <a href="video-diffusion-guide.pdf#page=23">翻到 PDF 第 23 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 workshop.py</code></pre><p>实际源码 <a href="reproduce/workshop_models.py">workshop_models.py</a>，从第 151 行开始。</p>
+<pre tabindex="0"><code>def attention(ambiguous=False):
+    queries = [[2, 0, 0], [0, 2, 0], [0, 0, 2]]
+    keys = [queries[2], queries[0], queries[1]]
+    if ambiguous:
+        keys = [queries[0], queries[0], queries[1]]
+    weights = []
+    for query in queries:
+        scores = [sum(first*second for first, second in zip(query, key))/math.sqrt(3) for key in keys]
+        mass = [math.exp(score-max(scores)) for score in scores]
+        weights.append([value/sum(mass) for value in mass])
+    return weights</code></pre></details></div></details>
+<details class="card" id="p24" data-search="ControlNet 遮罩 workshop_models.train_spatial">
+<summary><span class="page">24</span> <span>控制支路怎样把“这里有车”传给像素？</span></summary>
+<div class="body"><p class="part">小模型工坊 / 空间控制</p><p class="formula">输出 = 基础估计 + 学到的局部修正</p>
+<p class="action">比较训练前后的空间修正，再把正确遮罩换成迟一帧的遮罩。</p><nav aria-label="第 24 页的阅读与实验入口"><a class="primary" href="workshop/index.html#spatial">打开工坊 F</a>
+<a href="video-diffusion-lab.html#chapter-24">读图文版</a> <a href="video-diffusion-guide.pdf#page=24">翻到 PDF 第 24 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 workshop.py</code></pre><p>实际源码 <a href="reproduce/workshop_models.py">workshop_models.py</a>，从第 93 行开始。</p>
+<pre tabindex="0"><code>def train_spatial(seed, updates):
+    rng = random.Random(seed+401)
+    examples = []
+    for index in range(2048):
+        mask = rng.choice((-1, 1))
+        clean = 0.7*mask + 0.12*rng.gauss(0, 1)
+        noise = rng.gauss(0, 1)
+        examples.append((SIGNAL*clean + SIGMA*noise, mask, noise))
+    weight_image = weight_mask = 0.0
+    for step in range(updates):
+        grad_image = grad_mask = 0.0
+        for observed, mask, noise in examples:
+            error = BASE*observed + weight_image*observed + weight_mask*mask - noise
+            grad_image += error*observed
+            grad_mask += error*mask
+        weight_image -= 0.3*grad_image / len(examples)
+        weight_mask -= 0.3*grad_mask / len(examples)
+    return weight_image, weight_mask</code></pre></details></div></details>
+<details class="card" id="p25" data-search="ControlNet 遮罩 workshop_models.spatial_workshop">
+<summary><span class="page">25</span> <span>边缘明明错了，为什么整图误差不算大？</span></summary>
+<div class="body"><p class="part">小模型工坊 / 找到错位</p><p class="formula">区域 MAE = 区域内绝对误差之和 ÷ 区域像素数</p>
+<p class="action">保持同一张错位遮罩，分别看整图与发生变化的像素，比较两个分母。</p><nav aria-label="第 25 页的阅读与实验入口"><a class="primary" href="workshop/index.html#spatial">打开工坊 F</a>
+<a href="video-diffusion-lab.html#chapter-25">读图文版</a> <a href="video-diffusion-guide.pdf#page=25">翻到 PDF 第 25 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 workshop.py</code></pre><p>实际源码 <a href="reproduce/workshop_models.py">workshop_models.py</a>，从第 119 行开始。</p>
+<pre tabindex="0"><code>def spatial_workshop(seed, updates):
+    weights = train_spatial(seed, updates)
+    rng = random.Random(seed+509)
+    frames = []
+    for frame in range(8):
+        arrays = {name: [] for name in (&quot;truth&quot;, &quot;observed&quot;, &quot;mask&quot;, &quot;late_mask&quot;, &quot;base&quot;, &quot;aligned&quot;, &quot;late&quot;)}
+        for row in range(30):
+            for col in range(48):
+                mask = car_mask(row, col, frame)
+                late_mask = car_mask(row, col, max(frame-1, 0))
+                truth = 0.7*mask + 0.12*rng.gauss(0, 1)
+                observed = SIGNAL*truth + SIGMA*rng.gauss(0, 1)
+                base = (observed-SIGMA*BASE*observed) / SIGNAL
+
+                def corrected(condition):
+                    return base - SIGMA/SIGNAL * (weights[0]*observed + weights[1]*condition)
+
+                for key, value in zip(arrays, (truth, observed, mask, late_mask, base,
+                                               corrected(mask), corrected(late_mask))):
+                    arrays[key].append(value)
+        frames.append(arrays)
+    names = (&quot;base&quot;, &quot;aligned&quot;, &quot;late&quot;)
+    metrics = {}
+    for region in (&quot;all&quot;, &quot;changed&quot;):
+        metrics[region] = {
+            key: mean(abs(value-target) for arrays in frames
+                      for value, target, mask, late in zip(arrays[key], arrays[&quot;truth&quot;], arrays[&quot;mask&quot;], arrays[&quot;late_mask&quot;])
+                      if region == &quot;all&quot; or mask != late) for key in names}
+    metrics[&quot;n_changed&quot;] = sum(mask != late for arrays in frames for mask, late in zip(arrays[&quot;mask&quot;], arrays[&quot;late_mask&quot;]))
+    return {&quot;frames&quot;: frames, &quot;weights&quot;: weights, &quot;metrics&quot;: metrics}</code></pre></details></div></details>
+<details class="card" id="p26" data-search=" author_endpoints.author_samples">
+<summary><span class="page">26</span> <span>把起点和终点写反，只看半程会发现吗？</span></summary>
+<div class="body"><p class="part">源码导航 / 四个入口</p><p class="formula">直线题面 x_t = (1−t)x_0 + t x_1，速度标签 dx_t = x_1 − x_0</p>
+<p class="action">先读半程的两排速度，再把进度拖到 0.25。下方源码显示怎样调用作者库，终端命令可用标准库核对已保存的结果。</p><nav aria-label="第 26 页的阅读与实验入口"><a class="primary" href="prediction-lab/index.html#endpoints">打开作者库的端点与速度标签</a>
+<a href="video-diffusion-lab.html#chapter-26">读图文版</a> <a href="video-diffusion-guide.pdf#page=26">翻到 PDF 第 26 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 author_endpoints.py --step 25</code></pre><p>实际源码 <a href="reproduce/author_endpoints.py">author_endpoints.py</a>，从第 15 行开始。</p>
+<pre tabindex="0"><code>def author_samples():
+    &quot;&quot;&quot;在 CPU 上调用作者的直线路径，同一批时间点各做两次。&quot;&quot;&quot;
+    import torch
+    from flow_matching.path import CondOTProbPath
+
+    path = CondOTProbPath()
+    times = torch.tensor([k/100 for k in range(101)], dtype=torch.float64, device=&quot;cpu&quot;)
+    orders = []
+    for label, start, end in ORDERS:
+        x_0 = torch.full_like(times[:, None], start)
+        x_1 = torch.full_like(times[:, None], end)
+        answer = path.sample(x_0=x_0, x_1=x_1, t=times)
+        orders.append({&quot;label&quot;:label, &quot;start&quot;:start, &quot;end&quot;:end,
+                       &quot;x_t&quot;:answer.x_t[:, 0].tolist(), &quot;dx_t&quot;:answer.dx_t[:, 0].tolist()})
+    files = [Path(inspect.getfile(type(item))) for item in (path, path.scheduler)]
+    return {&quot;source_hashes&quot;:{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in files},
+            &quot;times&quot;:times.tolist(), &quot;orders&quot;:orders}</code></pre></details></div></details>
+<details class="card" id="p27" data-search="DDIM DDPM 随机 确定性 reverse_paths.reverse_step">
+<summary><span class="page">27</span> <span>把同一份雪花复印三份，会生成相同的车吗？</span></summary>
+<div class="body"><p class="part">反向采样 / 两种随机性</p><p class="formula">DDPM 反向一步含随机项；此处 DDIM 的 η = 0</p>
+<p class="action">用固定起点反复采样，比较两种采样器的最终路线。</p><nav aria-label="第 27 页的阅读与实验入口"><a class="primary" href="workshop/index.html#reverse">打开工坊 H</a>
+<a href="video-diffusion-lab.html#chapter-27">读图文版</a> <a href="video-diffusion-guide.pdf#page=27">翻到 PDF 第 27 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 workshop.py</code></pre><p>实际源码 <a href="reproduce/reverse_paths.py">reverse_paths.py</a>，从第 14 行开始。</p>
+<pre tabindex="0"><code>def reverse_step(state, clean, tick, total, sampler, rng):
+    signal, sigma = schedule(tick/total)
+    prev_signal, prev_sigma = schedule((tick-1)/total)
+    if sampler == &quot;DDIM&quot;:
+        noise = [(value-signal*estimate)/sigma for value, estimate in zip(state, clean)]
+        return [prev_signal*estimate + prev_sigma*eps for estimate, eps in zip(clean, noise)]
+    if sampler != &quot;DDPM&quot;:
+        raise ValueError(&quot;unknown sampler&quot;)
+    alpha = (signal/prev_signal)**2
+    beta = 1-alpha
+    step_sigma = math.sqrt(beta * prev_sigma**2 / sigma**2)
+    means = [(prev_signal*beta*estimate + math.sqrt(alpha)*prev_sigma**2*value)/sigma**2
+             for value, estimate in zip(state, clean)]
+    return [center + step_sigma*rng.gauss(0, 1) for center in means] if tick &gt; 1 else means</code></pre></details></div></details>
+<details class="card" id="p28" data-search="DDIM DDPM 随机 确定性 reverse_paths.compare">
+<summary><span class="page">28</span> <span>确定性采样器，是不是只能生成一种视频？</span></summary>
+<div class="body"><p class="part">反向采样 / 四格对照</p><p class="formula">固定起点与更换起点，是两个不同的对照</p>
+<p class="action">读固定起点和换起点两组的路线数。保持设置一致，再比较 DDPM 与 DDIM。</p><nav aria-label="第 28 页的阅读与实验入口"><a class="primary" href="workshop/index.html#reverse">打开工坊 H</a>
+<a href="video-diffusion-lab.html#chapter-28">读图文版</a> <a href="video-diffusion-guide.pdf#page=28">翻到 PDF 第 28 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 workshop.py</code></pre><p>实际源码 <a href="reproduce/reverse_paths.py">reverse_paths.py</a>，从第 42 行开始。</p>
+<pre tabindex="0"><code>def compare(seed, count=96):
+    initial_rng = random.Random(seed+803)
+    starts = [[initial_rng.gauss(0, 1) for frame in range(8)] for repeat in range(count)]
+    records = {}
+    for sampler in (&quot;DDIM&quot;, &quot;DDPM&quot;):
+        for start_mode in (&quot;fixed&quot;, &quot;fresh&quot;):
+            cases = [sample(starts[0 if start_mode == &quot;fixed&quot; else repeat], sampler, seed+200003+repeat)
+                     for repeat in range(count)]
+            records[sampler+&quot;_&quot;+start_mode] = {
+                &quot;counts&quot;: [sum(case[&quot;route&quot;] == route for case in cases) for route in range(4)],
+                &quot;max_rms&quot;: max(case[&quot;distance&quot;] for case in cases), &quot;cases&quot;: cases}
+    return records</code></pre></details></div></details>
+<details class="card" id="p29" data-search="video diffusion 视频扩散 时序 pixel_lab.exercise">
+<summary><span class="page">29</span> <span>如果不告诉模型车在哪儿呢？</span></summary>
+<div class="body"><p class="part">像素放映室 / 训练题</p><p class="formula">训练目标 v = a·ε − σ·y</p>
+<p class="action">选择有参考原片的去噪题，把两台网络的干净估计与同一列的原图比较。</p><nav aria-label="第 29 页的阅读与实验入口"><a class="primary" href="pixel-lab/index.html">打开像素放映室</a>
+<a href="video-diffusion-lab.html#chapter-29">读图文版</a> <a href="video-diffusion-guide.pdf#page=29">翻到 PDF 第 29 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 pixel_lab.py --device cpu --replay ../pixel-lab/weights.pt --out replay/pixel-cpu</code></pre><p>实际源码 <a href="reproduce/pixel_lab.py">pixel_lab.py</a>，从第 97 行开始。</p>
+<pre tabindex="0"><code>def exercise(clean, eps, tick):
+    signal, sigma = amplitudes(tick)
+    return signal*clean + sigma*eps, signal*eps-sigma*clean</code></pre></details></div></details>
+<details class="card" id="p30" data-search="video diffusion 视频扩散 时序 pixel_lab.TinyVideo.encode">
+<summary><span class="page">30</span> <span>不多给一个权重，只让邻帧说句话</span></summary>
+<div class="body"><p class="part">像素放映室 / 网络与训练</p><p class="formula">跨帧特征在相同参数量下传给下一个编码块</p>
+<p class="action">看留出集曲线的前期和后期两段。源码里的 mix_neighbors 决定哪些通道读相邻帧。</p><nav aria-label="第 30 页的阅读与实验入口"><a class="primary" href="pixel-lab/index.html#curve">打开像素放映室</a>
+<a href="video-diffusion-lab.html#chapter-30">读图文版</a> <a href="video-diffusion-guide.pdf#page=30">翻到 PDF 第 30 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 pixel_lab.py --device cpu --replay ../pixel-lab/weights.pt --out replay/pixel-cpu</code></pre><p>实际源码 <a href="reproduce/pixel_lab.py">pixel_lab.py</a>，从第 81 行开始。</p>
+<pre tabindex="0"><code>    def encode(self, features, frames):
+        skip = self.enter(features)
+        low = self.down(mix_neighbors(skip, frames, self.temporal))
+        low = low + self.middle(mix_neighbors(low, frames, self.temporal))
+        return skip, low</code></pre></details></div></details>
+<details class="card" id="p31" data-search="DDIM 视频扩散 采样器 clock_report.Recording.pixel">
+<summary><span class="page">31</span> <span>猜出了干净图，为什么还要再走一步？</span></summary>
+<div class="body"><p class="part">像素放映室 / 像素采样</p><p class="formula">ŷ = a·x − σ·v̂，ε̂ = σ·x + a·v̂</p>
+<p class="action">保持起点 1、帧 2、第 5 行第 7 列，停在 12 次更新后，核对下一步的 0.560。</p><nav aria-label="第 31 页的阅读与实验入口"><a class="primary" href="pixel-lab/two-clocks.html#update">打开六帧放映台</a>
+<a href="video-diffusion-lab.html#chapter-31">读图文版</a> <a href="video-diffusion-guide.pdf#page=31">翻到 PDF 第 31 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 clock_report.py ../pixel-lab/clock-data.js --step 12 --frame 2 --row 5 --col 7</code></pre><p>实际源码 <a href="reproduce/clock_report.py">clock_report.py</a>，从第 85 行开始。</p>
+<pre tabindex="0"><code>    def pixel(self, case, step, frame, row, col):
+        coords = (case,step,frame,row,col)
+        limits = (self.cases,self.steps+1,self.frames,self.height,self.width)
+        if any(not 0 &lt;= n &lt; bound for n,bound in zip(coords,limits)):
+            raise ValueError(&quot;起点、生成次数、影片帧或像素坐标超出记录范围&quot;)
+        i = self.plane_offset(case,step,frame)+row*self.width+col
+        x = self.states[i]
+        if step == self.steps:
+            return {&quot;state&quot;:x}
+        v = self.velocities[i]
+        a,sigma,na,ns = self.coefficients[step]
+        clean,noise = a*x-sigma*v, sigma*x+a*v
+        return {&quot;state&quot;:x,&quot;v&quot;:v,&quot;clean&quot;:clean,&quot;noise&quot;:noise,&quot;a&quot;:a,&quot;sigma&quot;:sigma,
+                &quot;next_a&quot;:na,&quot;next_sigma&quot;:ns,&quot;computed_next&quot;:na*clean+ns*noise,
+                &quot;recorded_next&quot;:self.states[i+self.cases*self.frames*self.plane]}</code></pre></details></div></details>
+<details class="card" id="p32" data-search="video diffusion 视频扩散 时序 pixel_lab.template_scores">
+<summary><span class="page">32</span> <span>一帧更像，不代表整段更像</span></summary>
+<div class="body"><p class="part">像素放映室 / 生成评估</p><p class="formula">逐帧各选模板，与整片共用一条模板，得到两种误差</p>
+<p class="action">先选同一起点看三排影片，再看 96 段整片的模板分数。</p><nav aria-label="第 32 页的阅读与实验入口"><a class="primary" href="pixel-lab/index.html#summary">打开像素放映室</a>
+<a href="video-diffusion-lab.html#chapter-32">读图文版</a> <a href="video-diffusion-guide.pdf#page=32">翻到 PDF 第 32 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 pixel_lab.py --device cpu --replay ../pixel-lab/weights.pt --out replay/pixel-cpu</code></pre><p>实际源码 <a href="reproduce/pixel_lab.py">pixel_lab.py</a>，从第 131 行开始。</p>
+<pre tabindex="0"><code>def template_scores(videos):
+    triples = [(left if direction==1 else WIDTH-1-left, row, direction)
+               for left in range(2, 9) for row in range(2, 10) for direction in (-1, 1)]
+    starts, rows, directions = torch.tensor(triples).T
+    templates = paint(starts, rows, directions).flatten(1)
+    norm = templates.shape[1]
+    values = videos.flatten(1)
+    squared = values.square().mean(1)[:, None] + 1 - 2*(values @ templates.T)/norm
+    best = squared.min(1)
+    centers = brightest_centers(videos)
+    center_x, center_y = centers.unbind(dim=2)
+    allowed_x = starts[:, None]+directions[:, None]*torch.arange(FRAMES)
+    hits = ((center_x[:, None, :] == allowed_x[None, :, :]) &amp;
+            (center_y[:, None, :] == rows[None, :, None])).all(2).any(1)
+    frame_min = []
+    for frame in range(FRAMES):
+        masks = templates.reshape(-1, FRAMES, HEIGHT*WIDTH)[:, frame]
+        pixels = videos[:, frame].flatten(1)
+        err = pixels.square().mean(1)[:, None]+1-2*(pixels@masks.T)/(HEIGHT*WIDTH)
+        frame_min.append(err.min(1).values.clamp_min(0))
+    return {&quot;route_hits&quot;: int(hits.sum()), &quot;nearest_distinct&quot;: int(best.indices.unique().numel()), &quot;frame_mse&quot;: float(torch.stack(frame_min).mean()),
+            &quot;clip_mse&quot;: float(best.values.clamp_min(0).mean()), &quot;right_nearest&quot;: int((directions[best.indices]&gt;0).sum()),
+            &quot;per_clip&quot;: best.values.clamp_min(0).tolist(), &quot;hits&quot;: hits.tolist(),
+            &quot;centers&quot;: centers.tolist()}</code></pre></details></div></details>
+<details class="card" id="p33" data-search="video diffusion 视频扩散 时序 pixel_lab.mix_neighbors">
+<summary><span class="page">33</span> <span>中间那张图一像素都不改，答案会变吗？</span></summary>
+<div class="body"><p class="part">像素放映室 / 干预与复跑</p><p class="formula">对照差 = 换邻帧后的估计 − 原估计</p>
+<p class="action">选择换邻帧面板，盯住完全相同的目标输入，比较它在两种上下文里的输出。</p><nav aria-label="第 33 页的阅读与实验入口"><a class="primary" href="pixel-lab/index.html">打开像素放映室</a>
+<a href="video-diffusion-lab.html#chapter-33">读图文版</a> <a href="video-diffusion-guide.pdf#page=33">翻到 PDF 第 33 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 pixel_lab.py --device cpu --replay ../pixel-lab/weights.pt --out replay/pixel-cpu</code></pre><p>实际源码 <a href="reproduce/pixel_lab.py">pixel_lab.py</a>，从第 44 行开始。</p>
+<pre tabindex="0"><code>def mix_neighbors(feature, frames, enabled):
+    if not enabled:
+        return feature
+    chunks = feature.reshape(-1, frames, *feature.shape[1:])
+    piece = chunks.shape[2]//4
+    previous = torch.cat([chunks[:, :1, :piece], chunks[:, :-1, :piece]], dim=1)
+    following = torch.cat([chunks[:, 1:, piece:2*piece], chunks[:, -1:, piece:2*piece]], dim=1)
+    return torch.cat([previous, following, chunks[:, :, 2*piece:]], dim=2).reshape_as(feature)</code></pre></details></div></details>
+<details class="card" id="p34" data-search="ControlNet 零卷积 零初始化 Adam 残差 梯度 反向传播 共享权重 卷积 gate_lesson.return_sum">
+<summary><span class="page">34</span> <span>出口全是零，支路怎么学会第一步？</span></summary>
+<div class="body"><p class="part">条件控制 / 零初始化</p><p class="formula">r = W·h + b，初始 W = b = 0</p>
+<p class="action">切换第一批与第二批，展开同一位置的 32 个返回项，再核对页中各层的梯度长度。</p><nav aria-label="第 34 页的阅读与实验入口"><a class="primary" href="control-lab/gate-training.html#adjoint">打开零出口训练实验</a>
+<a href="video-diffusion-lab.html#chapter-34">读图文版</a> <a href="video-diffusion-guide.pdf#page=34">翻到 PDF 第 34 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 gate_lesson.py ../control-lab --batch 2</code></pre><p>实际源码 <a href="reproduce/gate_lesson.py">gate_lesson.py</a>，从第 27 行开始。</p>
+<pre tabindex="0"><code>def return_sum(batch,channel=0,frame=2,row=2,col=3):
+    &quot;&quot;&quot;样片 0，本位置的 32 份输出梯度通过转置权重各送回来一项。&quot;&quot;&quot;
+    pos=(frame*6+row)*8+col
+    g=values(batch[&quot;all_g0&quot;])[pos*32:(pos+1)*32]
+    terms=[weights[channel]*v for weights,v in zip(batch[&quot;before&quot;],g)]
+    return {&quot;terms&quot;:terms,&quot;total&quot;:math.fsum(terms),&quot;autograd&quot;:values(batch[&quot;returned0&quot;])[pos*3+channel]}</code></pre></details></div></details>
+<details class="card" id="p35" data-search="ControlNet 条件控制 control_lab.visible">
+<summary><span class="page">35</span> <span>起点说了“在哪”，哪条信息说了“往哪”？</span></summary>
+<div class="body"><p class="part">条件控制 / 信息多寡</p><p class="formula">两题共享噪声及首帧提示时，确定性输出相同</p>
+<p class="action">只给首帧并反转任务，然后改给两个端点，比较哪一帧开始分开。</p><nav aria-label="第 35 页的阅读与实验入口"><a class="primary" href="control-lab/index.html">打开条件控制</a>
+<a href="video-diffusion-lab.html#pairedHints">读图文版</a> <a href="video-diffusion-guide.pdf#page=35">翻到 PDF 第 35 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 control_lab.py --device cpu --replay ../control-lab/branch.pt --out replay/control-cpu</code></pre><p>实际源码 <a href="reproduce/control_lab.py">control_lab.py</a>，从第 32 行开始。</p>
+<pre tabindex="0"><code>def visible(dots, modes):
+    frame = torch.arange(FRAMES, device=dots.device)[None, :]
+    keep = (frame==0) | ((modes[:, None]&gt;=1) &amp; (frame==FRAMES-1)) | (modes[:, None]==2)
+    return dots * keep[:, :, None, None]</code></pre></details></div></details>
+<details class="card" id="p36" data-search="ControlNet 条件控制 control_lab.measurements">
+<summary><span class="page">36</span> <span>它把指令执行得很好，为什么得零分？</span></summary>
+<div class="body"><p class="part">条件控制 / 错误路标</p><p class="formula">同一输出分别对原任务和相反任务评分</p>
+<p class="action">把六帧提示换成反方向，分别读原任务与反向任务的命中数。</p><nav aria-label="第 36 页的阅读与实验入口"><a class="primary" href="control-lab/index.html">打开条件控制</a>
+<a href="video-diffusion-lab.html#chapter-36">读图文版</a> <a href="video-diffusion-guide.pdf#page=36">翻到 PDF 第 36 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 control_lab.py --device cpu --replay ../control-lab/branch.pt --out replay/control-cpu</code></pre><p>实际源码 <a href="reproduce/control_lab.py">control_lab.py</a>，从第 79 行开始。</p>
+<pre tabindex="0"><code>def measurements(result, truth, opposite):
+    locations = positions(result)
+    distance = (locations-positions(truth)).abs().sum(2)
+    other_distance = (locations-positions(opposite)).abs().sum(2)
+    return {&quot;exact&quot;: int((distance==0).all(1).sum()), &quot;opposite&quot;: int((other_distance==0).all(1).sum()),
+            &quot;middle_l1&quot;: distance[:, 1:-1].float().mean().item(),
+            &quot;pixel_mse&quot;: (result-truth).square().mean().item(), &quot;centers&quot;: locations.tolist()}</code></pre></details></div></details>
+<details class="card" id="p37" data-search="ControlNet 条件控制 control_lab.controlled">
+<summary><span class="page">37</span> <span>粗尺度和细尺度，哪条路在指挥方块？</span></summary>
+<div class="body"><p class="part">条件控制 / 强度与复现</p><p class="formula">解码输入 = (细特征 + λ细r细，粗特征 + λ粗r粗)</p>
+<p class="action">分别只留细出口和粗出口，再与两出口全开的 96 题成绩比较。</p><nav aria-label="第 37 页的阅读与实验入口"><a class="primary" href="control-lab/index.html">打开条件控制</a>
+<a href="video-diffusion-lab.html#chapter-37">读图文版</a> <a href="video-diffusion-guide.pdf#page=37">翻到 PDF 第 37 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 control_lab.py --device cpu --replay ../control-lab/branch.pt --out replay/control-cpu</code></pre><p>实际源码 <a href="reproduce/control_lab.py">control_lab.py</a>，从第 56 行开始。</p>
+<pre tabindex="0"><code>def controlled(base, branch, state, tick, guide, scales=(1., 1.)):
+    features = base.inputs(state, tick)
+    skip, low = base.encode(features, state.shape[1])
+    fine, coarse = branch(features, guide)
+    return base.decode_features(state, skip+scales[0]*fine, low+scales[1]*coarse)</code></pre></details></div></details>
+<details class="card" id="p38" data-search="flow matching 流匹配 flow_coupling.arrows">
+<summary><span class="page">38</span> <span>两支箭头意见相反，要听哪一支？</span></summary>
+<div class="body"><p class="part">流匹配 / 条件平均</p><p class="formula">v = (1−p)·u左 + p·u右</p>
+<p class="action">将路口进度设为 0.5，位置从 0 改到 0.25，观察右团权重与合成箭头。</p><nav aria-label="第 38 页的阅读与实验入口"><a class="primary" href="flow-lab/index.html">打开流匹配实验</a>
+<a href="video-diffusion-lab.html#flowArrows">读图文版</a> <a href="video-diffusion-guide.pdf#page=38">翻到 PDF 第 38 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 flow_coupling.py</code></pre><p>实际源码 <a href="reproduce/flow_coupling.py">flow_coupling.py</a>，从第 22 行开始。</p>
+<pre tabindex="0"><code>def arrows(x, t):
+    &quot;&quot;&quot;先在一个高斯分量内取平均，再用后验概率混合左右两支。&quot;&quot;&quot;
+    var = variance(t)
+    slope = (t*SPREAD**2 - (1-t)) / var
+    right = (1 + math.tanh(t*CENTER*x / var)) / 2
+    left_speed = -CENTER + slope*(x + t*CENTER)
+    right_speed = CENTER + slope*(x - t*CENTER)
+    return {&quot;p&quot;: right, &quot;left&quot;: left_speed, &quot;right&quot;: right_speed,
+            &quot;v&quot;: (1-right)*left_speed + right*right_speed}</code></pre></details></div></details>
+<details class="card" id="p39" data-search="flow matching 流匹配 flow_coupling.quantile">
+<summary><span class="page">39</span> <span>没有给它终点，怎样判断走对了？</span></summary>
+<div class="body"><p class="part">流匹配 / 积分与分位</p><p class="formula">Fₜ(x) = q 确定一维分位参考位置</p>
+<p class="action">选第 75 百分位，比较同一起点 1 步和 4 步的轨迹与参考曲线。</p><nav aria-label="第 39 页的阅读与实验入口"><a class="primary" href="flow-lab/index.html#track">打开流匹配实验</a>
+<a href="video-diffusion-lab.html#chapter-39">读图文版</a> <a href="video-diffusion-guide.pdf#page=39">翻到 PDF 第 39 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 flow_coupling.py</code></pre><p>实际源码 <a href="reproduce/flow_coupling.py">flow_coupling.py</a>，从第 45 行开始。</p>
+<pre tabindex="0"><code>def quantile(q, t):
+    if not 0 &lt; q &lt; 1:
+        raise ValueError(&quot;分位必须在 0 与 1 之间&quot;)
+    if t == 0:
+        return NORMAL.inv_cdf(q)
+    offset = NORMAL.inv_cdf(q)*math.sqrt(variance(t))
+    low, high = offset-t*CENTER, offset+t*CENTER
+    for _ in range(60):
+        mid = (low+high)/2
+        if cdf(mid, t) &lt; q:
+            low = mid
+        else:
+            high = mid
+    return (low+high)/2</code></pre></details></div></details>
+<details class="card" id="p40" data-search="flow matching 流匹配 flow_coupling.fit_displacements">
+<summary><span class="page">40</span> <span>终点一个没换，训练题怎么变简单了？</span></summary>
+<div class="body"><p class="part">流匹配 / 重新配对</p><p class="formula">保留配对时，学生用本起点对应的老师位移作标签</p>
+<p class="action">固定起点排位，比较保留配对与打乱终点时哪条位移线较直。</p><nav aria-label="第 40 页的阅读与实验入口"><a class="primary" href="flow-lab/index.html#couple">打开流匹配实验</a>
+<a href="video-diffusion-lab.html#chapter-40">读图文版</a> <a href="video-diffusion-guide.pdf#page=40">翻到 PDF 第 40 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 flow_coupling.py</code></pre><p>实际源码 <a href="reproduce/flow_coupling.py">flow_coupling.py</a>，从第 98 行开始。</p>
+<pre tabindex="0"><code>def fit_displacements(starts, ends, bins=96):
+    &quot;&quot;&quot;每个区间用平方损失拟合一个位移均值，将节点间线性连接。&quot;&quot;&quot;
+    totals = [[0., 0., 0] for _ in range(bins)]
+    for z,y in zip(starts, ends):
+        index = min(bins-1, max(0, int((z+3.5)*bins/7)))
+        cell = totals[index]
+        cell[0] += z
+        cell[1] += y-z
+        cell[2] += 1
+    anchors = [(z/n,d/n) for z,d,n in totals if n]
+    if len(anchors)&lt;2:
+        raise ValueError(&quot;不同的训练位置不足&quot;)
+    return list(zip(*anchors))</code></pre></details></div></details>
+<details class="card" id="p41" data-search="flow matching 流匹配 flow_coupling.student">
+<summary><span class="page">41</span> <span>学生一步追上谁？先看老师走到了哪</span></summary>
+<div class="body"><p class="part">流匹配 / 一步蒸馏</p><p class="formula">一步输出 = 起点 + 拟合的位移</p>
+<p class="action">对照同样教师步数下学生相对老师、相对精确参考的两种误差。</p><nav aria-label="第 41 页的阅读与实验入口"><a class="primary" href="flow-lab/index.html#scores">打开流匹配实验</a>
+<a href="video-diffusion-lab.html#chapter-41">读图文版</a> <a href="video-diffusion-guide.pdf#page=41">翻到 PDF 第 41 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 flow_coupling.py</code></pre><p>实际源码 <a href="reproduce/flow_coupling.py">flow_coupling.py</a>，从第 113 行开始。</p>
+<pre tabindex="0"><code>def student(z, table):
+    knots, displacements = table
+    high = min(len(knots)-1, max(1, bisect.bisect_right(knots,z)))
+    low = high-1
+    w = (z-knots[low])/(knots[high]-knots[low])
+    return z + (1-w)*displacements[low] + w*displacements[high]</code></pre></details></div></details>
+<details class="card" id="p42" data-search="VAE 潜空间 z latent noise 潜码 噪声起点 latent_lab.PairVAE.encode">
+<summary><span class="page">42</span> <span>六帧小方块，怎样装进 72 个数？</span></summary>
+<div class="body"><p class="part">视频潜空间 / 形状</p><p class="formula">6 × 12 × 16 个像素 → 3 × 2 × 3 × 4 个潜数</p>
+<p class="action">从潜网格选一个时间组，数清两通道共多少格，再与六帧像素数比较。</p><nav aria-label="第 42 页的阅读与实验入口"><a class="primary" href="latent-lab/index.html">打开潜空间实验</a>
+<a href="video-diffusion-lab.html#latentBook">读图文版</a> <a href="video-diffusion-guide.pdf#page=42">翻到 PDF 第 42 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 latent_lab.py --device cpu --replay ../latent-lab/weights.pt --out replay/latent-cpu</code></pre><p>实际源码 <a href="reproduce/latent_lab.py">latent_lab.py</a>，从第 43 行开始。</p>
+<pre tabindex="0"><code>    def encode(self, clip):
+        params = self.encoder(clip.reshape(-1,2,HEIGHT,WIDTH))
+        mu, logvar = params.chunk(2,dim=1)
+        return mu.reshape(-1,*LATENT_SHAPE), logvar.clamp(-12,8).reshape(-1,*LATENT_SHAPE)</code></pre></details></div></details>
+<details class="card" id="p43" data-search="VAE 潜空间 latent_lab.posterior">
+<summary><span class="page">43</span> <span>同一段原片，为什么能得到两份码？</span></summary>
+<div class="body"><p class="part">视频潜空间 / 随机编码</p><p class="formula">z = μ + exp(logvar/2)·ε</p>
+<p class="action">固定原片，在后验面板对比取均值和抽样，观察解码图与重建误差。</p><nav aria-label="第 43 页的阅读与实验入口"><a class="primary" href="latent-lab/index.html#post">打开潜空间实验</a>
+<a href="video-diffusion-lab.html#chapter-43">读图文版</a> <a href="video-diffusion-guide.pdf#page=43">翻到 PDF 第 43 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 latent_lab.py --device cpu --replay ../latent-lab/weights.pt --out replay/latent-cpu</code></pre><p>实际源码 <a href="reproduce/latent_lab.py">latent_lab.py</a>，从第 55 行开始。</p>
+<pre tabindex="0"><code>def posterior(mu,logvar,eps):
+    return mu+(logvar*.5).exp()*eps</code></pre></details></div></details>
+<details class="card" id="p44" data-search="VAE 潜空间 latent_lab.PairVAE.decode">
+<summary><span class="page">44</span> <span>换走中间 24 个数，哪几帧会跟着走？</span></summary>
+<div class="body"><p class="part">视频潜空间 / 干预</p><p class="formula">改变一个潜数后，差图 = 新解码 − 原解码</p>
+<p class="action">选中间时间组的一个数，拖动偏移，观察哪两帧发生改变，再按重置。</p><nav aria-label="第 44 页的阅读与实验入口"><a class="primary" href="latent-lab/index.html">打开潜空间实验</a>
+<a href="video-diffusion-lab.html#chapter-44">读图文版</a> <a href="video-diffusion-guide.pdf#page=44">翻到 PDF 第 44 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 latent_lab.py --device cpu --replay ../latent-lab/weights.pt --out replay/latent-cpu</code></pre><p>实际源码 <a href="reproduce/latent_lab.py">latent_lab.py</a>，从第 51 行开始。</p>
+<pre tabindex="0"><code>    def decode(self,z):
+        return 2*self.logits(z).sigmoid()-1</code></pre></details></div></details>
+<details class="card" id="p45" data-search="VAE 潜空间 latent_lab.transport">
+<summary><span class="page">45</span> <span>会解码了，谁来写出一份合理的码？</span></summary>
+<div class="body"><p class="part">视频潜空间 / 生成</p><p class="formula">潜状态下一步 = 当前潜状态 + Δt·预测速度</p>
+<p class="action">固定生成起点，对比直接解码雪花与经过流匹配后解码的影片。</p><nav aria-label="第 45 页的阅读与实验入口"><a class="primary" href="latent-lab/index.html#generated">打开潜空间实验</a>
+<a href="video-diffusion-lab.html#chapter-45">读图文版</a> <a href="video-diffusion-guide.pdf#page=45">翻到 PDF 第 45 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 latent_lab.py --device cpu --replay ../latent-lab/weights.pt --out replay/latent-cpu</code></pre><p>实际源码 <a href="reproduce/latent_lab.py">latent_lab.py</a>，从第 118 行开始。</p>
+<pre tabindex="0"><code>def transport(net,noise,steps):
+    state = noise.clone()
+    for k in range(steps):
+        time = torch.full((len(noise),1),k/steps,device=noise.device)
+        state = state + net(state,time)/steps
+    return state</code></pre></details></div></details>
+<details class="card" id="p46" data-search="VAE 潜空间 latent_lab.reconstruction">
+<summary><span class="page">46</span> <span>能还原 28 条路线，随机生成也都能走对吗？</span></summary>
+<div class="body"><p class="part">视频潜空间 / 评测与复跑</p><p class="formula">逐帧画质与全段路线命中分别评分</p>
+<p class="action">先看生成样片，再检查整批生成成绩，与已知原片的重建题区分开。</p><nav aria-label="第 46 页的阅读与实验入口"><a class="primary" href="latent-lab/index.html#genStats">打开潜空间实验</a>
+<a href="video-diffusion-lab.html#chapter-46">读图文版</a> <a href="video-diffusion-guide.pdf#page=46">翻到 PDF 第 46 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 latent_lab.py --device cpu --replay ../latent-lab/weights.pt --out replay/latent-cpu</code></pre><p>实际源码 <a href="reproduce/latent_lab.py">latent_lab.py</a>，从第 126 行开始。</p>
+<pre tabindex="0"><code>def reconstruction(output,truth):
+    scores = template_scores(output.cpu())
+    reference = template_scores(truth.cpu())
+    exact = [a==b for a,b in zip(scores[&quot;centers&quot;],reference[&quot;centers&quot;])]
+    return {&quot;mse&quot;:(output-truth).square().mean().item(),&quot;exact&quot;:sum(exact)}</code></pre></details></div></details>
+<details class="card" id="p47" data-search="DiT Transformer dit_lab.patchify">
+<summary><span class="page">47</span> <span>72 个数怎样变成 18 个视频块？</span></summary>
+<div class="body"><p class="part">条件 Transformer / 切块</p><p class="formula">3 个时间组 × 3 行 × 2 块 = 18 个块</p>
+<p class="action">选中一个视频块，读它对应的时间组和空间位置，再展开源码核对重排次序。</p><nav aria-label="第 47 页的阅读与实验入口"><a class="primary" href="dit-lab/index.html">打开条件 DiT 实验</a>
+<a href="video-diffusion-lab.html#ditBook">读图文版</a> <a href="video-diffusion-guide.pdf#page=47">翻到 PDF 第 47 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 dit_lab.py --device cpu --replay ../dit-lab/weights.pt --out replay/dit-cpu</code></pre><p>实际源码 <a href="reproduce/dit_lab.py">dit_lab.py</a>，从第 19 行开始。</p>
+<pre tabindex="0"><code>def patchify(z):
+    # [组, 通道, 行, 列] → 每行两个宽 2 的块；每块先列出通道 0 的左右格。
+    return z.reshape(-1,3,2,3,2,2).permute(0,1,3,4,2,5).reshape(-1,TOKENS,4)</code></pre></details></div></details>
+<details class="card" id="p48" data-search="DiT Transformer dit_lab.Block.forward">
+<summary><span class="page">48</span> <span>块 8 更新时，读了哪几组的消息？</span></summary>
+<div class="body"><p class="part">条件 Transformer / 注意力</p><p class="formula">注意力权重 = softmax(QKᵀ/√d)</p>
+<p class="action">固定块 8，切换头或层，比较它分给三个时间组的权重。</p><nav aria-label="第 48 页的阅读与实验入口"><a class="primary" href="dit-lab/index.html">打开条件 DiT 实验</a>
+<a href="video-diffusion-lab.html#chapter-48">读图文版</a> <a href="video-diffusion-guide.pdf#page=48">翻到 PDF 第 48 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 dit_lab.py --device cpu --replay ../dit-lab/weights.pt --out replay/dit-cpu</code></pre><p>实际源码 <a href="reproduce/dit_lab.py">dit_lab.py</a>，从第 41 行开始。</p>
+<pre tabindex="0"><code>    def forward(self,h,condition,local):
+        shift,scale,gate,shift_m,scale_m,gate_m = self.modulate(condition).unsqueeze(1).chunk(6,-1)
+        modulated = self.norm(h)*(1+scale)+shift
+        q,k,v = self.qkv(modulated).reshape(-1,TOKENS,3,HEADS,DIM//HEADS).permute(2,0,3,1,4)
+        logits = (q @ k.transpose(-1,-2)) / (DIM//HEADS)**.5
+        if local:
+            logits = logits.masked_fill(self.other,float(&quot;-inf&quot;))
+        weights = logits.softmax(-1)
+        message = (weights @ v).transpose(1,2).reshape_as(h)
+        h = h + gate*self.projection(message)
+        h = h + gate_m*self.mlp(self.norm(h)*(1+scale_m)+shift_m)
+        return h,weights</code></pre></details></div></details>
+<details class="card" id="p49" data-search="DiT Transformer dit_lab.probe">
+<summary><span class="page">49</span> <span>中间块一格不变，它还会改口吗？</span></summary>
+<div class="body"><p class="part">条件 Transformer / 跨组干预</p><p class="formula">相同中心输入在不同上下文中的输出差，可检验跨组依赖</p>
+<p class="action">先看全局注意力，再屏蔽跨组连接，结合第 49 页的换邻组对照读结果。</p><nav aria-label="第 49 页的阅读与实验入口"><a class="primary" href="dit-lab/index.html#maps">打开条件 DiT 实验</a>
+<a href="video-diffusion-lab.html#chapter-49">读图文版</a> <a href="video-diffusion-guide.pdf#page=49">翻到 PDF 第 49 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 dit_lab.py --device cpu --replay ../dit-lab/weights.pt --out replay/dit-cpu</code></pre><p>实际源码 <a href="reproduce/dit_lab.py">dit_lab.py</a>，从第 145 行开始。</p>
+<pre tabindex="0"><code>@torch.no_grad()
+def probe(net,state,foreign):
+    t = torch.full((1,1),.5,device=state.device)
+    rows = {}
+    for name,label in [(&quot;empty&quot;,NULL),(&quot;left&quot;,LEFT),(&quot;right&quot;,RIGHT)]:
+        ids = torch.tensor([label],device=state.device)
+        velocity,maps = net(state,t,ids,trace=True)
+        rows[name] = {&quot;velocity&quot;:patchify(velocity)[0].tolist(),&quot;maps&quot;:[layer[0].tolist() for layer in maps]}
+    ids = torch.tensor([LEFT],device=state.device)
+    replacement = foreign.clone()
+    replacement[:,1] = state[:,1]
+    effects,by_token = {},{}
+    for key,local in [(&quot;full&quot;,False),(&quot;local&quot;,True)]:
+        before = net(state,t,ids,local)
+        after = net(replacement,t,ids,local)
+        change = patchify(after-before)[0,6:12].abs()
+        effects[key] = change.mean().item()
+        by_token[key] = change.mean(dim=1).tolist()
+    return {&quot;tokens&quot;:patchify(state)[0].tolist(),&quot;answers&quot;:rows,&quot;effects&quot;:effects,&quot;by_token&quot;:by_token}</code></pre></details></div></details>
+<details class="card" id="p50" data-search="DiT Transformer dit_lab.guided">
+<summary><span class="page">50</span> <span>CFG 放大的是哪个差？</span></summary>
+<div class="body"><p class="part">条件 Transformer / 引导</p><p class="formula">v引导 = v空 + w(v方向 − v空)</p>
+<p class="action">选同一潜分量，把 w 从 0 切到 1，再核对引导速度和条件预测相等。</p><nav aria-label="第 50 页的阅读与实验入口"><a class="primary" href="dit-lab/index.html#w">打开条件 DiT 实验</a>
+<a href="video-diffusion-lab.html#chapter-50">读图文版</a> <a href="video-diffusion-guide.pdf#page=50">翻到 PDF 第 50 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 dit_lab.py --device cpu --replay ../dit-lab/weights.pt --out replay/dit-cpu</code></pre><p>实际源码 <a href="reproduce/dit_lab.py">dit_lab.py</a>，从第 113 行开始。</p>
+<pre tabindex="0"><code>def guided(net,x,t,labels,w,local):
+    if w==0:
+        return net(x,t,torch.zeros_like(labels),local)
+    if w==1:
+        return net(x,t,labels,local)
+    together = net(torch.cat([x,x]),torch.cat([t,t]),torch.cat([torch.zeros_like(labels),labels]),local)
+    empty,conditional = together.chunk(2)
+    return empty+w*(conditional-empty)</code></pre></details></div></details>
+<details class="card" id="p51" data-search="DiT Transformer dit_lab.compare">
+<summary><span class="page">51</span> <span>方向答对了，为什么整段还会丢分？</span></summary>
+<div class="body"><p class="part">条件 Transformer / 成绩与复跑</p><p class="formula">方向命中与六帧严格命中，评分条件不同</p>
+<p class="action">固定同一份雪花，让左右指令分别采样，结合整批成绩看哪种考法更严。</p><nav aria-label="第 51 页的阅读与实验入口"><a class="primary" href="dit-lab/index.html#movies">打开条件 DiT 实验</a>
+<a href="video-diffusion-lab.html#chapter-51">读图文版</a> <a href="video-diffusion-guide.pdf#page=51">翻到 PDF 第 51 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 dit_lab.py --device cpu --replay ../dit-lab/weights.pt --out replay/dit-cpu</code></pre><p>实际源码 <a href="reproduce/dit_lab.py">dit_lab.py</a>，从第 131 行开始。</p>
+<pre tabindex="0"><code>def compare(out,labels):
+    stats = template_scores(out.cpu())
+    paths = torch.tensor(stats[&quot;centers&quot;])
+    dx = paths[:,-1,0]-paths[:,0,0]
+    ok = (dx*torch.where(labels.cpu()==LEFT,-1,1)&gt;0)
+    strict = ok &amp; torch.tensor(stats[&quot;hits&quot;])
+    paired = ok.reshape(-1,2)
+    both_strict = strict.reshape(-1,2).all(1)
+    return {&quot;direction&quot;:int(ok.sum()),&quot;stationary&quot;:int((dx==0).sum()),&quot;strict&quot;:int(strict.sum()),
+            &quot;both&quot;:int(paired.all(1).sum()),&quot;both_strict&quot;:int(both_strict.sum()),&quot;mse&quot;:stats[&quot;clip_mse&quot;],
+            &quot;unique&quot;:len({tuple(map(tuple,p)) for p,hit in zip(stats[&quot;centers&quot;],strict) if hit}),
+            &quot;both_bits&quot;:paired.all(1).tolist(),&quot;first_dx&quot;:dx[:16].tolist(),&quot;first_centers&quot;:paths[:16].tolist()}</code></pre></details></div></details>
+<details class="card" id="p52" data-search="参数化 ε 噪声预测 prediction_lab.read_prediction">
+<summary><span class="page">52</span> <span>答案写成 −1、0.8 或 −1.28，谁答对了？</span></summary>
+<div class="body"><p class="part">公式练习 / 三种输出</p><p class="formula">ŷ = (x−σε̂)/a，或 ŷ = ax−σv̂</p>
+<p class="action">保持 x = 0.04，依次选择三种输出和对应读法，比较还原的像素。</p><nav aria-label="第 52 页的阅读与实验入口"><a class="primary" href="prediction-lab/index.html">打开公式练习</a>
+<a href="video-diffusion-lab.html#predictionBook">读图文版</a> <a href="video-diffusion-guide.pdf#page=52">翻到 PDF 第 52 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 prediction_lab.py</code></pre><p>实际源码 <a href="reproduce/prediction_lab.py">prediction_lab.py</a>，从第 24 行开始。</p>
+<pre tabindex="0"><code>def read_prediction(state, output, kind, signal):
+    &quot;&quot;&quot;返回干净值和噪声估计。端点上不能由方程确定的分量记为 None。&quot;&quot;&quot;
+    sigma = math.sqrt(1 - signal**2)
+    if kind == &quot;epsilon&quot;:
+        return ((state-sigma*output)/signal if signal else None), output
+    if kind == &quot;sample&quot;:
+        return output, ((state-signal*output)/sigma if sigma else None)
+    if kind == &quot;v_prediction&quot;:
+        return signal*state-sigma*output, sigma*state+signal*output
+    raise ValueError(f&quot;未知的输出类型 {kind!r}&quot;)</code></pre></details></div></details>
+<details class="card" id="p53" data-search="参数化 ε 噪声预测 prediction_lab.car_row">
+<summary><span class="page">53</span> <span>每个像素都报对了，车怎么还会变样？</span></summary>
+<div class="body"><p class="part">公式练习 / 看见换算误差</p><p class="formula">像素误差按正确参数化换算，再在全图汇总</p>
+<p class="action">点车身与背景各一个像素，先核对数值，再换成不匹配的读法比较差图。</p><nav aria-label="第 53 页的阅读与实验入口"><a class="primary" href="prediction-lab/index.html#car">打开公式练习</a>
+<a href="video-diffusion-lab.html#chapter-53">读图文版</a> <a href="video-diffusion-guide.pdf#page=53">翻到 PDF 第 53 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 prediction_lab.py</code></pre><p>实际源码 <a href="reproduce/prediction_lab.py">prediction_lab.py</a>，从第 54 行开始。</p>
+<pre tabindex="0"><code>def car_row(clean, noise, signal):
+    mixed, matched, mistaken = [], [], []
+    for y, z in zip(clean, noise):
+        x, targets = exercise(y, z, signal)
+        v = targets[&quot;v_prediction&quot;]
+        mixed.append(x)
+        matched.append(read_prediction(x,v,&quot;v_prediction&quot;,signal)[0])
+        mistaken.append(read_prediction(x,v,&quot;epsilon&quot;,signal)[0])
+    return (clean, mixed, matched, mistaken)</code></pre></details></div></details>
+<details class="card" id="p54" data-search="参数化 ε 噪声预测 v、u v_prediction velocity flow matching 扩散速度 流速度 prediction_lab.trace">
+<summary><span class="page">54</span> <span>都叫速度，为什么乘的步长会不同？</span></summary>
+<div class="body"><p class="part">公式练习 / 两只速度钟</p><p class="formula">速度 = a′(t)y + b′(t)z</p>
+<p class="action">将余弦和直线路径同时停到半程，用同一对端点比较导数。</p><nav aria-label="第 54 页的阅读与实验入口"><a class="primary" href="prediction-lab/index.html#paths">打开公式练习</a>
+<a href="video-diffusion-lab.html#predictionPaths">读图文版</a> <a href="video-diffusion-guide.pdf#page=54">翻到 PDF 第 54 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 prediction_lab.py</code></pre><p>实际源码 <a href="reproduce/prediction_lab.py">prediction_lab.py</a>，从第 36 行开始。</p>
+<pre tabindex="0"><code>def trace(clean, noise, time):
+    &quot;&quot;&quot;两条固定端点的条件路径。生成进度同为 0→1，统一按每单位进度求导。&quot;&quot;&quot;
+    angle = (1-time)*math.pi/2
+    a = 0.0 if time == 0 else math.cos(angle)
+    b = math.sin(angle)
+    velocity = a*noise-b*clean
+    return {
+        &quot;arc&quot;: (a, b, a*clean+b*noise, -math.pi/2*velocity),
+        &quot;line&quot;: (time, 1-time, time*clean+(1-time)*noise, clean-noise),
+    }</code></pre></details></div></details>
+<details class="card" id="p55" data-search="HunyuanVideo 混元 hunyuan_trace.address">
+<summary><span class="page">55</span> <span>129 帧小片，怎样变成 118,800 个块？</span></summary>
+<div class="body"><p class="part">开源项目 / 数张量</p><p class="formula">视频潜网格除以 patch 尺寸得到视觉块数</p>
+<p class="action">先在小片上查块 57 的分量 22，再选择发布示例，比较网格大小。</p><nav aria-label="第 55 页的阅读与实验入口"><a class="primary" href="hunyuan-lab/index.html#shapes">打开源码练习</a>
+<a href="video-diffusion-lab.html#hunyuanBook">读图文版</a> <a href="video-diffusion-guide.pdf#page=55">翻到 PDF 第 55 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 hunyuan_trace.py</code></pre><p>实际源码 <a href="reproduce/hunyuan_trace.py">hunyuan_trace.py</a>，从第 28 行开始。</p>
+<pre tabindex="0"><code>def address(grid, token, component):
+    nt, nh, nw = grid
+    if not 0 &lt;= token &lt; nt*nh*nw or not 0 &lt;= component &lt; 64:
+        raise ValueError(&quot;块号或输出分量超出当前网格&quot;)
+    t, spatial = divmod(token,nh*nw)
+    r, c = divmod(spatial,nw)
+    channel, inside = divmod(component,4)
+    dy, dx = divmod(inside,2)
+    return (t,r,c), (0,channel,t,2*r+dy,2*c+dx)</code></pre></details></div></details>
+<details class="card" id="p56" data-search="HunyuanVideo 混元 hunyuan_trace.guidance_features">
+<summary><span class="page">56</span> <span>示例里的强度 6，是在哪一步用上的？</span></summary>
+<div class="body"><p class="part">开源项目 / 引导进入网络</p><p class="formula">嵌入强度经过缩放和正弦余弦编码</p>
+<p class="action">输入强度 6，分别看外部 CFG 批次和嵌入数值，核对它们去了哪里。</p><nav aria-label="第 56 页的阅读与实验入口"><a class="primary" href="hunyuan-lab/index.html#guidance">打开源码练习</a>
+<a href="video-diffusion-lab.html#chapter-56">读图文版</a> <a href="video-diffusion-guide.pdf#page=56">翻到 PDF 第 56 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 hunyuan_trace.py</code></pre><p>实际源码 <a href="reproduce/hunyuan_trace.py">hunyuan_trace.py</a>，从第 58 行开始。</p>
+<pre tabindex="0"><code>def guidance_features(strength):
+    encoded = strength*1000
+    phases = [encoded*math.exp(-math.log(10000)*j/128) for j in range(128)]
+    return [math.cos(phi) for phi in phases]+[math.sin(phi) for phi in phases]</code></pre></details></div></details>
+<details class="card" id="p57" data-search="HunyuanVideo 混元 hunyuan_trace.knots">
+<summary><span class="page">57</span> <span>模型看见 1000，为什么第一步只走 0.1？</span></summary>
+<div class="body"><p class="part">开源项目 / 采样时间表</p><p class="formula">shift 改变噪声层级，步宽取相邻 σ 之差</p>
+<p class="action">固定四步，切换 shift = 1 和 9，对照第一步与最后一步的跨度。</p><nav aria-label="第 57 页的阅读与实验入口"><a class="primary" href="hunyuan-lab/index.html#clock">打开源码练习</a>
+<a href="video-diffusion-lab.html#hunyuanClock">读图文版</a> <a href="video-diffusion-guide.pdf#page=57">翻到 PDF 第 57 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 hunyuan_trace.py</code></pre><p>实际源码 <a href="reproduce/hunyuan_trace.py">hunyuan_trace.py</a>，从第 39 行开始。</p>
+<pre tabindex="0"><code>def knots(steps, shift):
+    &quot;&quot;&quot;发布示例启用 flow-reverse，先从 1 排到 0，再变换刻度。&quot;&quot;&quot;
+    if steps &lt; 1 or not math.isfinite(shift) or shift &lt;= 0:
+        raise ValueError(&quot;步数和 shift 须为正&quot;)
+    positions = [(steps-i)/steps for i in range(steps+1)]
+    return [shift*r/(1+(shift-1)*r) for r in positions]</code></pre></details></div></details>
+<details class="card" id="p58" data-search="HunyuanVideo 混元 hunyuan_trace.solve">
+<summary><span class="page">58</span> <span>查询次数相同，换个时间表会差多少？</span></summary>
+<div class="body"><p class="part">开源项目 / 验算采样器</p><p class="formula">x′ = x + (σ′−σ)·vσ</p>
+<p class="action">在同一分位比较不同步序的轨迹，再查 256 个起点的平均误差。</p><nav aria-label="第 58 页的阅读与实验入口"><a class="primary" href="hunyuan-lab/index.html#scores">打开源码练习</a>
+<a href="video-diffusion-lab.html#chapter-58">读图文版</a> <a href="video-diffusion-guide.pdf#page=58">翻到 PDF 第 58 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 hunyuan_trace.py</code></pre><p>实际源码 <a href="reproduce/hunyuan_trace.py">hunyuan_trace.py</a>，从第 47 行开始。</p>
+<pre tabindex="0"><code>def solve(sigmas, initial):
+    &quot;&quot;&quot;用实验 K 可精确计算的速度场代替大网络，按源码的 sigma 单位更新。&quot;&quot;&quot;
+    x = initial
+    path = [x]
+    for sigma, following in zip(sigmas,sigmas[1:]):
+        speed_sigma = -velocity(x,1-sigma)
+        x += (following-sigma)*speed_sigma
+        path.append(x)
+    return path</code></pre></details></div></details>
+<details class="card" id="p59" data-search="ControlNet 控制 hint_probe.dots">
+<summary><span class="page">59</span> <span>只在一帧挪一个点，邻帧也会变吗？</span></summary>
+<div class="body"><p class="part">控制探针 / 挪一个点</p><p class="formula">输入只改一处，比较 Δŷ = ŷB − ŷA</p>
+<p class="action">恢复讲义设置。保持雪花和两只出口强度一致，把帧 2 的 B 点移回 A 的位置，检查六帧差图。</p><nav aria-label="第 59 页的阅读与实验入口"><a class="primary" href="control-lab/edit-points.html">打开提示点实验</a>
+<a href="video-diffusion-lab.html#hintBook">读图文版</a> <a href="video-diffusion-guide.pdf#page=59">翻到 PDF 第 59 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 hint_probe.py --out replay/edit-points</code></pre><p>实际源码 <a href="reproduce/hint_probe.py">hint_probe.py</a>，从第 23 行开始。</p>
+<pre tabindex="0"><code>def dots(points):
+    guide = torch.zeros(1, FRAMES, HEIGHT, WIDTH)
+    for f, point in enumerate(points):
+        if point is not None:
+            x, y = point
+            if not (0 &lt;= x &lt; WIDTH and 0 &lt;= y &lt; HEIGHT):
+                raise ValueError(&quot;提示点不在画面内&quot;)
+            guide[0, f, y, x] = 1
+    return guide</code></pre></details></div></details>
+<details class="card" id="p60" data-search="ControlNet 控制 control_lab.controlled">
+<summary><span class="page">60</span> <span>提示点是在哪里加进画面的？</span></summary>
+<div class="body"><p class="part">控制探针 / 打开加号</p><p class="formula">h′ = h + λr</p>
+<p class="action">在粗尺度通道 0 选第 2 行、第 3 列，让 λ 从 1 降到 0.5，重算框内的 0.3859。</p><nav aria-label="第 60 页的阅读与实验入口"><a class="primary" href="control-lab/edit-points.html#maps">打开提示点实验</a>
+<a href="video-diffusion-lab.html#hintAdd">读图文版</a> <a href="video-diffusion-guide.pdf#page=60">翻到 PDF 第 60 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 hint_probe.py --out replay/edit-points</code></pre><p>实际源码 <a href="reproduce/control_lab.py">control_lab.py</a>，从第 56 行开始。</p>
+<pre tabindex="0"><code>def controlled(base, branch, state, tick, guide, scales=(1., 1.)):
+    features = base.inputs(state, tick)
+    skip, low = base.encode(features, state.shape[1])
+    fine, coarse = branch(features, guide)
+    return base.decode_features(state, skip+scales[0]*fine, low+scales[1]*coarse)</code></pre></details></div></details>
+<details class="card" id="p61" data-search="flow matching 流匹配 flow_tickets.summary">
+<summary><span class="page">61</span> <span>一千多张题卡，怎样合成一支箭头？</span></summary>
+<div class="body"><p class="part">流匹配练习 / 给箭头评分</p><p class="formula">平均平方损失 = 标签方差 + (猜测 − 均值)²</p>
+<p class="action">保留默认窗口，先猜 0，再点“采用样本平均”，检查最低损失是否仍大于零。</p><nav aria-label="第 61 页的阅读与实验入口"><a class="primary" href="flow-lab/training-tickets.html#guess">打开训练题实验</a>
+<a href="video-diffusion-lab.html#ticketBook">读图文版</a> <a href="video-diffusion-guide.pdf#page=61">翻到 PDF 第 61 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 flow_tickets.py</code></pre><p>实际源码 <a href="reproduce/flow_tickets.py">flow_tickets.py</a>，从第 26 行开始。</p>
+<pre tabindex="0"><code>def summary(records):
+    counts=[[0,0] for _ in range(BINS)]
+    if not records:
+        return {&quot;count&quot;:0,&quot;mean&quot;:None,&quot;variance&quot;:None,&quot;bins&quot;:counts}
+    labels=[r[-1] for r in records]
+    avg=sum(labels)/len(labels)
+    for record in records:
+        i=max(0,min(BINS-1,math.floor(record[-1])+8))
+        counts[i][int(record[3]&gt;0)]+=1
+    return {&quot;count&quot;:len(labels),&quot;mean&quot;:avg,&quot;variance&quot;:sum((u-avg)**2 for u in labels)/len(labels),
+            &quot;bins&quot;:counts}</code></pre></details></div></details>
+<details class="card" id="p62" data-search="flow matching 流匹配 flow_tickets.gate">
+<summary><span class="page">62</span> <span>把方向取平均，会漏掉过门的人吗？</span></summary>
+<div class="body"><p class="part">流匹配练习 / 数过门的人</p><p class="formula">净流过人数 = 向右人数 − 向左人数</p>
+<p class="action">把门移到 x = 0，比较训练直线与精确生成轨迹各有多少人换边。</p><nav aria-label="第 62 页的阅读与实验入口"><a class="primary" href="flow-lab/training-tickets.html#center">打开训练题实验</a>
+<a href="video-diffusion-lab.html#gateBook">读图文版</a> <a href="video-diffusion-guide.pdf#page=62">翻到 PDF 第 62 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 flow_tickets.py --x 0</code></pre><p>实际源码 <a href="reproduce/flow_tickets.py">flow_tickets.py</a>，从第 44 行开始。</p>
+<pre tabindex="0"><code>def gate(samples, x, t, half_span):
+    early,late=max(0,t-half_span),min(1,t+half_span)
+    # q = Φ(z) 沿精确一维 ODE 保持不变。q &lt; F_t(x) 当且仅当轨迹位于门左侧。
+    def cutoff(time):
+        prob=cdf(x,time)
+        if prob==0: return -math.inf
+        if prob==1: return math.inf
+        return NORMAL.inv_cdf(prob)
+
+    cutoff_early,cutoff_late=cutoff(early),cutoff(late)
+    before=after=right=left=ode_before=ode_after=0
+    for z,y,_ in samples:
+        start=(1-early)*z+early*y &lt; x
+        end=(1-late)*z+late*y &lt; x
+        ode_before+=z&lt;cutoff_early
+        ode_after+=z&lt;cutoff_late
+        before+=start
+        after+=end
+        right+=start and not end
+        left+=not start and end
+    return {&quot;early&quot;:early,&quot;late&quot;:late,&quot;before&quot;:before,&quot;after&quot;:after,&quot;right&quot;:right,&quot;left&quot;:left,
+            &quot;ode_before&quot;:ode_before,&quot;ode_after&quot;:ode_after,&quot;ode_right&quot;:max(0,ode_before-ode_after),
+            &quot;ode_left&quot;:max(0,ode_after-ode_before),&quot;net&quot;:right-left,&quot;empirical_rate&quot;:(right-left)/(len(samples)*(late-early)),
+            &quot;exact_rate&quot;:(cdf(x,early)-cdf(x,late))/(late-early),
+            &quot;instantaneous_rate&quot;:density(x,t)*arrows(x,t)[&quot;v&quot;]}</code></pre></details></div></details>
+<details class="card" id="p63" data-search="跨帧通道 时间移位 TSM 感受野 视频扩散 temporal_report.address">
+<summary><span class="page">63</span> <span>帧 2 的这一格，原来在哪一帧？</span></summary>
+<div class="body"><p class="part">跨帧实验 / 通道地址</p><p class="formula">移位后 H′[f,c,r,q] = 移位前 H[s,c,r,q]</p>
+<p class="action">入口通道 2 读前帧，把选中格加 1，沿六根条形核对预测的变化。</p><nav aria-label="第 63 页的阅读与实验入口"><a class="primary" href="pixel-lab/temporal-shift.html#routes">打开跨帧通道实验</a>
+<a href="video-diffusion-lab.html#temporalBook">读图文版</a> <a href="video-diffusion-guide.pdf#page=63">翻到 PDF 第 63 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 temporal_report.py ../pixel-lab --switches 111 --swap 0</code></pre><p>实际源码 <a href="reproduce/temporal_report.py">temporal_report.py</a>，从第 45 行开始。</p>
+<pre tabindex="0"><code>def address(data,key,layer,frame,channel,row,col):
+    if len(key)!=3 or set(key)-{&quot;0&quot;,&quot;1&quot;} or layer not in range(3):
+        raise ValueError(&quot;开关须为三个 0 或 1，交接序号为 0、1、2&quot;)
+    spec=data[&quot;taps&quot;][key[:layer]]
+    frames,channels,h,w=spec[&quot;shape&quot;]
+    scale=2 if layer==2 else 1
+    if not (0&lt;=frame&lt;frames and 0&lt;=channel&lt;channels and 0&lt;=row&lt;h*scale and 0&lt;=col&lt;w*scale):
+        raise ValueError(&quot;帧号、通道、行或列超出该层范围&quot;)
+    origin=source_frame(frame,channel,channels,key[layer]==&quot;1&quot;)
+    r,c=row//scale,col//scale
+    features=values(spec)
+    def at(f):
+        return features[((f*channels+channel)*h+r)*w+c]
+    return {&quot;source_frame&quot;:origin,&quot;local_value&quot;:at(frame),&quot;received&quot;:at(origin),
+            &quot;stored_row&quot;:r,&quot;stored_col&quot;:c}</code></pre></details></div></details>
+<details class="card" id="p64" data-search="跨帧通道 时间移位 TSM 感受野 视频扩散 temporal_report.differences">
+<summary><span class="page">64</span> <span>只换帧 0，帧 3 能知道吗？</span></summary>
+<div class="body"><p class="part">跨帧实验 / 一帧的影响</p><p class="formula">D[j,f] = 平均 |换帧后 v̂[f] − 原 v̂[f]|</p>
+<p class="action">只换输入帧 0，先看帧 3，再看帧 4。关掉中间一次传递，比较两格。</p><nav aria-label="第 64 页的阅读与实验入口"><a class="primary" href="pixel-lab/temporal-shift.html#reach">打开跨帧通道实验</a>
+<a href="video-diffusion-lab.html#temporalReach">读图文版</a> <a href="video-diffusion-guide.pdf#page=64">翻到 PDF 第 64 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 temporal_report.py ../pixel-lab --switches 111 --swap 0</code></pre><p>实际源码 <a href="reproduce/temporal_report.py">temporal_report.py</a>，从第 33 行开始。</p>
+<pre tabindex="0"><code>def differences(run):
+    _,frames,h,w=run[&quot;shape&quot;]
+    raw=values(run)
+    plane=h*w
+    result=[]
+    for replaced in range(frames):
+        start=(replaced+1)*frames*plane
+        result.append([sum(abs(raw[i+start]-raw[i]) for i in range(f*plane,(f+1)*plane))/plane
+                       for f in range(frames)])
+    return result</code></pre></details></div></details>
+<details class="card" id="p65" data-search="DDPM DDIM 扩散 反向采样 条件分布 方差 均值 reverse_pixel.step_parameters">
+<summary><span class="page">65</span> <span>均值猜对了，亮度也会抽对吗？</span></summary>
+<div class="body"><p class="part">反向采样 / 均值与分布</p><p class="formula">精确反向方差 = 两组内共同的方差 + 两个组中心的方差</p>
+<p class="action">观察亮度 [0, 0.15) 在两种分布中的概率，再点击“直达干净层”，检查两根精确柱的位置。</p><nav aria-label="第 65 页的阅读与实验入口"><a class="primary" href="prediction-lab/reverse-step.html#bins">打开反向一步实验</a>
+<a href="video-diffusion-lab.html#reverseBook">读图文版</a> <a href="video-diffusion-guide.pdf#page=65">翻到 PDF 第 65 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 reverse_pixel.py --x 0.04 --target 0.96</code></pre><p>实际源码 <a href="reproduce/reverse_pixel.py">reverse_pixel.py</a>，从第 17 行开始。</p>
+<pre tabindex="0"><code>def step_parameters(x, target):
+    &quot;&quot;&quot;target 是较干净层的信号系数。用第 8 页的后验权重合并两种真实来源。&quot;&quot;&quot;
+    if not SIGNAL&lt;target&lt;=1 or not math.isfinite(x) or not -2&lt;=x&lt;=2:
+        raise ValueError(&quot;本帧 x 须在 −2 到 2 之间，目标信号系数须大于 0.8 且不超过 1&quot;)
+    guess=estimate(x)
+    ratio=SIGNAL/target
+    beta=1-ratio**2
+    target_var=1-target**2
+    within=beta*target_var/SIGMA**2
+    # 对已知原值 y，下一格的中心是 cy·y + cx·x。干净端点精确退化为 y。
+    cy=1. if target==1 else target*beta/SIGMA**2
+    cx=ratio*target_var/SIGMA**2
+    body,back=cy*BODY+cx*x,cy*BACKGROUND+cx*x
+    p=guess[&quot;body&quot;]
+    mean=p*body+(1-p)*back
+    between=p*(1-p)*(body-back)**2
+    return {&quot;x&quot;:x,&quot;target&quot;:target,&quot;p&quot;:p,&quot;clean&quot;:guess[&quot;clean&quot;],&quot;noise&quot;:guess[&quot;noise&quot;],
+            &quot;ratio&quot;:ratio,&quot;beta&quot;:beta,&quot;cy&quot;:cy,&quot;cx&quot;:cx,&quot;body&quot;:body,&quot;back&quot;:back,&quot;mean&quot;:mean,
+            &quot;std&quot;:math.sqrt(within),&quot;within&quot;:within,&quot;between&quot;:between,&quot;variance&quot;:within+between,
+            &quot;ddim&quot;:target*guess[&quot;clean&quot;]+math.sqrt(target_var)*guess[&quot;noise&quot;]}</code></pre></details></div></details>
+<details class="card" id="p66" data-search="综合实验 ControlNet flow matching 视频扩散 联合控制 flow_hint_report.cell">
+<summary><span class="page">66</span> <span>挪动一个点，哪一个数先改变？</span></summary>
+<div class="body"><p class="part">综合实验 / 两处控制</p><p class="formula">h′ = h + λr；x′ = x + u/24</p>
+<p class="action">点“看第 66 页例题”，对同一状态比较基座速度和受控速度，再手算下一格。</p><nav aria-label="第 66 页的阅读与实验入口"><a class="primary" href="flow-hint/index.html#step">打开首帧点与方向联合实验</a>
+<a href="video-diffusion-lab.html#comboBlock">读图文版</a> <a href="video-diffusion-guide.pdf#page=66">翻到 PDF 第 66 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 flow_hint_report.py ../flow-hint --step 12 --case 1 --token 8</code></pre><p>实际源码 <a href="reproduce/flow_hint_report.py">flow_hint_report.py</a>，从第 24 行开始。</p>
+<pre tabindex="0"><code>def cell(data,strength,case,n,token,component,block):
+    &quot;&quot;&quot;在同一状态读基座速度和接入支路后的速度，再核对一次欧拉更新。&quot;&quot;&quot;
+    rec=data[&quot;records&quot;][str(float(strength))]
+    args=(case,n,token,component)
+    x=number(rec[&quot;x&quot;],*args)
+    v=number(rec[&quot;v&quot;],*args)
+    before,r,after=[number(rec[&quot;features&quot;],case,n,block,token,k) for k in range(3)]
+    return {&quot;x&quot;:x,&quot;v&quot;:v,&quot;base_same_x&quot;:number(rec[&quot;free&quot;],*args),&quot;delta_x&quot;:v/data[&quot;steps&quot;],
+            &quot;next&quot;:number(rec[&quot;x&quot;],case,n+1,token,component),&quot;before&quot;:before,&quot;residual&quot;:r,&quot;after&quot;:after}</code></pre></details></div></details>
+<details class="card" id="p67" data-search="综合实验 ControlNet flow matching 视频扩散 联合控制 flow_hint.score">
+<summary><span class="page">67</span> <span>走对了方向，就算听懂起点了吗？</span></summary>
+<div class="body"><p class="part">综合实验 / 留出成绩</p><p class="formula">六帧全中 = 六个实测中心各自与对应的目标坐标相等</p>
+<p class="action">对照三种强度的成绩，找到首个未全中样片出错的帧，读出差了几列。</p><nav aria-label="第 67 页的阅读与实验入口"><a class="primary" href="flow-hint/index.html#scores">打开首帧点与方向联合实验</a>
+<a href="video-diffusion-lab.html#comboScores">读图文版</a> <a href="video-diffusion-guide.pdf#page=67">翻到 PDF 第 67 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 flow_hint.py --device cpu --replay ../flow-hint/branch.pt --out replay/flow-hint-cpu</code></pre><p>实际源码 <a href="reproduce/flow_hint.py">flow_hint.py</a>，从第 148 行开始。</p>
+<pre tabindex="0"><code>def score(decoded,truth):
+    measured=brightest_centers(decoded.cpu())
+    truth=truth.cpu()
+    equal=(measured==truth).all(-1)
+    direction=(measured[:,-1,0]-measured[:,0,0])*(truth[:,-1,0]-truth[:,0,0])&gt;0
+    return {&quot;first&quot;:int(equal[:,0].sum()),&quot;direction&quot;:int(direction.sum()),
+            &quot;strict&quot;:int(equal.all(1).sum()),&quot;frame_hits&quot;:int(equal.sum()),
+            &quot;n&quot;:len(truth),&quot;centers&quot;:measured.tolist()}</code></pre></details></div></details>
+<details class="card" id="p68" data-search="倒放 正放 重新生成 帧率 生成速度 光流 flow matching 运动 片中速度 playback_report.measure">
+<summary><span class="page">68</span> <span>潜码速度是负的，方块怎么还会向右走？</span></summary>
+<div class="body"><p class="part">综合实验 / 两种速度</p><p class="formula">潜码改变量 = u × Δτ，播放速度 = 相邻播放格的中心位移 × 帧率</p>
+<p class="action">比较正放、倒放、向左重新生成，再将向左片的首帧点移到列 12。对齐后点开播放格 1 的最大亮度差。</p><nav aria-label="第 68 页的阅读与实验入口"><a class="primary" href="flow-hint/playback.html#films">打开倒放与重新生成</a>
+<a href="video-diffusion-lab.html#motionTimes">读图文版</a> <a href="video-diffusion-guide.pdf#page=68">翻到 PDF 第 68 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 playback_report.py --seed 9317 --frame 1 --step 12 --fps 6</code></pre><p>实际源码 <a href="reproduce/playback_report.py">playback_report.py</a>，从第 27 行开始。</p>
+<pre tabindex="0"><code>def measure(run, frame, step, fps):
+    center = run[&quot;centers&quot;][frame]
+    velocity = None
+    if frame+1&lt;FRAMES:
+        following = run[&quot;centers&quot;][frame+1]
+        velocity = [(after-before)*fps for before,after in zip(center,following)]
+    return {&quot;source_frame&quot;:run[&quot;order&quot;][frame], &quot;center&quot;:center, &quot;time_seconds&quot;:frame/fps,
+            &quot;pixels_per_second&quot;:velocity, &quot;x&quot;:run[&quot;x&quot;][step], &quot;u&quot;:run[&quot;u&quot;][step],
+            &quot;next&quot;:run[&quot;x&quot;][step+1]}</code></pre></details></div></details>
+<details class="card" id="p69" data-search="光流 optical flow 帧率 生成速度 flow matching 位移 视频帧 RAFT motion_readout.match_window">
+<summary><span class="page">69</span> <span>下一帧有九个白点，哪一个是原来的点？</span></summary>
+<div class="body"><p class="part">综合实验 / 帧间匹配</p><p class="formula">位移代价 = 窗口内所有对应亮度差的绝对值之和</p>
+<p class="action">选理想方块，依次比较一个像素、横排三格和整块九格；再选解码成片，点 (+1,0) 核对代价。</p><nav aria-label="第 69 页的阅读与实验入口"><a class="primary" href="flow-hint/motion.html#match">打开生成速度与片中运动实验</a>
+<a href="video-diffusion-lab.html#motionMatch">读图文版</a> <a href="video-diffusion-guide.pdf#page=69">翻到 PDF 第 69 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 motion_readout.py ../flow-hint --frame 2 --source decoded --window square</code></pre><p>实际源码 <a href="reproduce/motion_readout.py">motion_readout.py</a>，从第 56 行开始。</p>
+<pre tabindex="0"><code>def match_window(a,b,at,window):
+    &quot;&quot;&quot;枚举整数位移。每个候选只比较两帧之间相同形状的窗口，保留全部并列最优解。&quot;&quot;&quot;
+    x,y = at
+    rx,ry = WINDOWS[window]
+    def fits(col,row):
+        return rx&lt;=col&lt;W-rx and ry&lt;=row&lt;H-ry
+    if not fits(x,y):
+        raise ValueError(&quot;源窗口超出图像&quot;)
+    costs = []
+    for dy in range(-2,3):
+        row = []
+        for dx in range(-2,3):
+            if fits(x+dx,y+dy):
+                cost = sum(abs(a[y+j][x+i]-b[y+dy+j][x+dx+i])
+                           for j in range(-ry,ry+1) for i in range(-rx,rx+1))
+            else:
+                cost = None
+            row.append(cost)
+        costs.append(row)
+    lowest = min(val for row in costs for val in row if val is not None)
+    best = [[i-2,j-2] for j,row in enumerate(costs) for i,val in enumerate(row) if val==lowest]
+    return {&quot;costs&quot;:costs, &quot;lowest&quot;:lowest, &quot;best&quot;:best}</code></pre></details></div></details>
+<details class="card" id="p70" data-search="采样器 欧拉 Euler 显式中点 midpoint Flow Matching NFE 步数 查询 solver_lab.sample_path">
+<summary><span class="page">70</span> <span>都只问四次速度，三排各走到了哪里？</span></summary>
+<div class="body"><p class="part">采样实验 / 四次查询</p><p class="formula">抵达进度 = 已更新次数 × 步长</p>
+<p class="action">保留 4 次预算并生成三排。先比较两条欧拉轨迹抵达的进度，再看末帧画面。</p><nav aria-label="第 70 页的阅读与实验入口"><a class="primary" href="flow-hint/first-film.html#budget">打开同预算求解器实验</a>
+<a href="video-diffusion-lab.html#solverClock">读图文版</a> <a href="video-diffusion-guide.pdf#page=70">翻到 PDF 第 70 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 solver_lab.py --sample --budget 4 --out replay/solver-sample</code></pre><p>实际源码 <a href="reproduce/solver_lab.py">solver_lab.py</a>，从第 39 行开始。</p>
+<pre tabindex="0"><code>def sample_path(base,branch,start,labels,points,strength,decode,focus,budget,mode):
+    &quot;&quot;&quot;记录同一展示样片的真实查询，再解码本次实际抵达的位置。&quot;&quot;&quot;
+    steps,method,count=schedule(mode,budget)
+    def coordinate(x):
+        return float(patchify(x[focus:focus+1])[0,8,0])
+    path=[coordinate(start)]
+    queries=[]
+    speeds=[]
+    def observe_query(t,state,v):
+        queries.append([float(t[0,0]),coordinate(state),coordinate(v)])
+    def record(k,x,v,following,t,hint):
+        path.append(coordinate(following))
+        speeds.append(coordinate(v))
+    end=solve(base,branch,start,labels,points,strength,record,steps=steps,method=method,
+              stop_after=count,on_query=observe_query)
+    video=decode(end)
+    selected=video[focus:focus+1]
+    row={&quot;mode&quot;:mode,&quot;budget&quot;:budget,&quot;steps&quot;:steps,&quot;updates&quot;:count,&quot;at&quot;:count/steps,
+         &quot;calls&quot;:len(queries),&quot;path&quot;:path,&quot;speeds&quot;:speeds,&quot;queries&quot;:queries,
+         &quot;centers&quot;:brightest_centers(selected.cpu())[0].tolist(),&quot;film&quot;:byte_clips(selected)[0]}
+    return row,end,video</code></pre></details></div></details>
+<details class="card" id="p71" data-search="采样器 欧拉 Euler 显式中点 midpoint Flow Matching NFE 步数 查询 flow_hint.solve">
+<summary><span class="page">71</span> <span>在半路问了速度，为什么还要从起点算？</span></summary>
+<div class="body"><p class="part">采样实验 / 半步试探</p><p class="formula">中点试探 x½ = x + hu₀/2，再从原点更新 x′ = x + hu½</p>
+<p class="action">在同一示例选中点法的第 2 次查询，核对本步起点、试探位置和实际接受的半程状态。</p><nav aria-label="第 71 页的阅读与实验入口"><a class="primary" href="flow-hint/first-film.html#ask">打开同预算求解器实验</a>
+<a href="video-diffusion-lab.html#solverMid">读图文版</a> <a href="video-diffusion-guide.pdf#page=71">翻到 PDF 第 71 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 solver_lab.py --sample --budget 4 --out replay/solver-sample</code></pre><p>实际源码 <a href="reproduce/flow_hint.py">flow_hint.py</a>，从第 118 行开始。</p>
+<pre tabindex="0"><code>@torch.no_grad()
+def solve(base,branch,start,labels,points,strength,observe=None,*,steps=STEPS,method=&quot;euler&quot;,stop_after=None,on_query=None,control_window=None):
+    &quot;&quot;&quot;在等距生成进度上求解。stop_after 限制实际更新次数，保留原网格步长。&quot;&quot;&quot;
+    count=steps if stop_after is None else stop_after
+    if steps&lt;1 or not 0&lt;=count&lt;=steps or method not in (&quot;euler&quot;,&quot;midpoint&quot;):
+        raise ValueError(&quot;步数、停止位置或积分方法无效&quot;)
+    begin,end=(0,steps) if control_window is None else control_window
+    if not 0&lt;=begin&lt;=end&lt;=steps or not isinstance(begin,int) or not isinstance(end,int):
+        raise ValueError(&quot;控制窗口使用从 0 数的整数步，须满足 0 ≤ 起点 ≤ 终点 ≤ 总步数&quot;)
+    state=start.clone()
+    hint=hint_map(points)
+    for k in range(count):
+        t=torch.full((len(start),1),k/steps,device=start.device)
+        scale=strength if begin&lt;=k&lt;end else 0.
+        v=velocity(base,branch,state,t,labels,hint,scale)
+        if on_query is not None:
+            on_query(t,state,v)
+        if method==&quot;midpoint&quot;:
+            trial=state+v/(2*steps)
+            at_half=torch.full_like(t,(k+.5)/steps)
+            v=velocity(base,branch,trial,at_half,labels,hint,scale)
+            if on_query is not None:
+                on_query(at_half,trial,v)
+        following=state+v/steps
+        if observe is not None:
+            observe(k,state,v,following,t,hint)
+        state=following
+    return state</code></pre></details></div></details>
+<details class="card" id="p72" data-search="积分误差 步数 欧拉 Euler 显式中点法 midpoint RMSE 查询预算 solver_report.rows_for">
+<summary><span class="page">72</span> <span>更贴近速度场的终点，就能多答对几段吗？</span></summary>
+<div class="body"><p class="part">采样实验 / 两把尺</p><p class="formula">潜码 RMSE = √平均(粗网格终点 − 细网格终点)²；整段命中要求六个中心全对</p>
+<p class="action">把查询预算从 4 改成 24，分别读潜码误差、全中数和两者共同答对的段数。</p><nav aria-label="第 72 页的阅读与实验入口"><a class="primary" href="flow-hint/solver-scores.html#scores">打开求解器配对成绩</a>
+<a href="video-diffusion-lab.html#solverGrade">读图文版</a> <a href="video-diffusion-guide.pdf#page=72">翻到 PDF 第 72 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 solver_report.py ../flow-hint --budget 4</code></pre><p>实际源码 <a href="reproduce/solver_report.py">solver_report.py</a>，从第 14 行开始。</p>
+<pre tabindex="0"><code>def rows_for(data,budget):
+    return [row for row in data[&quot;rows&quot;] if row[&quot;budget&quot;]==budget]</code></pre></details></div></details>
+<details class="card" id="p73" data-search="ControlNet 零卷积 零初始化 Adam 残差 梯度 反向传播 共享权重 卷积 gate_training.fixed_response">
+<summary><span class="page">73</span> <span>预测已经变了，为什么挪点还没用？</span></summary>
+<div class="body"><p class="part">控制训练 / 两次更新</p><p class="formula">接入支路的差 = 原点图预测 − 基座预测；移点差 = 新点图预测 − 原点图预测</p>
+<p class="action">把更新次数从 1 切到 2，再放大当前色阶，寻找移点产生的第一批非零差。</p><nav aria-label="第 73 页的阅读与实验入口"><a class="primary" href="control-lab/gate-training.html#response">打开零出口训练实验</a>
+<a href="video-diffusion-lab.html#gateStart">读图文版</a> <a href="video-diffusion-guide.pdf#page=73">翻到 PDF 第 73 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 gate_training.py --out replay/gates</code></pre><p>实际源码 <a href="reproduce/gate_training.py">gate_training.py</a>，从第 55 行开始。</p>
+<pre tabindex="0"><code>@torch.no_grad()
+def fixed_response(base,branch,x,t,a,b,step):
+    original=base(x,t)
+    pa=controlled(base,branch,x,t,a)
+    pb=controlled(base,branch,x,t,b)
+    difference=pb-pa
+    return {&quot;updates&quot;:step,&quot;base_max&quot;:float((pa-original).abs().max()),
+            &quot;edit_max&quot;:float(difference.abs().max()),&quot;mean_by_frame&quot;:difference[0].abs().mean((-2,-1)).tolist(),
+            &quot;base&quot;:tensor_record(original[0]),&quot;a&quot;:tensor_record(pa[0]),&quot;b&quot;:tensor_record(pb[0]),
+            &quot;hint_weight_max&quot;:float(branch.hint.weight.abs().max()),
+            &quot;coarse_weight_max&quot;:float(branch.coarse.weight.abs().max())}</code></pre></details></div></details>
+<details class="card" id="p74" data-search="ControlNet 零卷积 零初始化 Adam 残差 梯度 反向传播 共享权重 卷积 gate_lesson.weight_sum">
+<summary><span class="page">74</span> <span>一个卷积权重，为什么收到 6,912 份贡献？</span></summary>
+<div class="body"><p class="part">控制训练 / 权重的梯度</p><p class="formula">∂L/∂Wₒᵢ = Σₚ gₚₒ hₚᵢ；∂L/∂hₚᵢ = Σₒ Wₒᵢ gₚₒ</p>
+<p class="action">选择一格，从逐格乘积加到整批，再用中央差分独立核对。</p><nav aria-label="第 74 页的阅读与实验入口"><a class="primary" href="control-lab/gate-training.html#weight">打开零出口训练实验</a>
+<a href="video-diffusion-lab.html#gateWeight">读图文版</a> <a href="video-diffusion-guide.pdf#page=74">翻到 PDF 第 74 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 gate_lesson.py ../control-lab --batch 1</code></pre><p>实际源码 <a href="reproduce/gate_lesson.py">gate_lesson.py</a>，从第 11 行开始。</p>
+<pre tabindex="0"><code>def weight_sum(batch,output=0,channel=0,sample=0,frame=2,row=2,col=3):
+    &quot;&quot;&quot;一个出口权重跨 24 段、6 帧、6×8 个位置共享。用每个位置的 g*h 还原梯度。&quot;&quot;&quot;
+    h=values(batch[&quot;h&quot;])
+    g=values(batch[&quot;g&quot;])
+    count,frames,height,width,channels=batch[&quot;h&quot;][&quot;shape&quot;]
+    pos=((sample*frames+frame)*height+row)*width+col
+    terms=[h[i+channel]*g[i+output] for i in range(0,len(h),channels)]
+    start=(sample*frames+frame)*height*width
+    first=sample*frames*height*width
+    return {&quot;h&quot;:h[pos*channels+channel],&quot;g&quot;:g[pos*channels+output],&quot;product&quot;:terms[pos],
+            &quot;frame&quot;:math.fsum(terms[start:start+height*width]),&quot;sample&quot;:math.fsum(terms[first:first+frames*height*width]),
+            &quot;total&quot;:math.fsum(terms),&quot;autograd&quot;:batch[&quot;dw&quot;][output][channel],
+            &quot;before&quot;:batch[&quot;before&quot;][output][channel],&quot;after&quot;:batch[&quot;after&quot;][output][channel],
+            &quot;central&quot;:batch[&quot;finite&quot;][output][channel][2],&quot;count&quot;:len(terms)}</code></pre></details></div></details>
+<details class="card" id="p75" data-search="v_prediction v 参数化 流匹配 flow matching DDIM 欧拉 速度 坐标 时间表 直线 圆弧 v、u v_prediction velocity flow matching 扩散速度 流速度 path_coordinates.line_coordinates">
+<summary><span class="page">75</span> <span>扩散模型报出的 v，怎样换成直线速度？</span></summary>
+<div class="body"><p class="part">速度换算 / 同一配比</p><p class="formula">τ = a/(a+σ)，X = x/(a+σ)，u = (a−σ)x − (a+σ)v</p>
+<p class="action">固定同一对端点，滑动干净系数。读出同一配比的两种状态，再换成同号端点。</p><nav aria-label="第 75 页的阅读与实验入口"><a class="primary" href="pixel-lab/path-clock.html#pair">打开扩散与直线速度换算</a>
+<a href="video-diffusion-lab.html#pathPair">读图文版</a> <a href="video-diffusion-guide.pdf#page=75">翻到 PDF 第 75 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 path_coordinates.py --pair 0.8 -1 --signal 0.8</code></pre><p>实际源码 <a href="reproduce/path_coordinates.py">path_coordinates.py</a>，从第 17 行开始。</p>
+<pre tabindex="0"><code>def line_coordinates(x, v, signal, sigma):
+    &quot;&quot;&quot;x、v 共用同一次圆弧模型调用，可为标量或整段视频张量。&quot;&quot;&quot;
+    total = signal + sigma
+    tau = signal / total
+    state = x / total
+    speed = (signal - sigma)*x - total*v
+    return tau, state, speed</code></pre></details></div></details>
+<details class="card" id="p76" data-search="v_prediction v 参数化 流匹配 flow matching DDIM 欧拉 速度 坐标 时间表 直线 圆弧 path_coordinates.next_step">
+<summary><span class="page">76</span> <span>同一步更新，为什么能算出两种读数？</span></summary>
+<div class="body"><p class="part">速度换算 / 对上一步</p><p class="formula">X′ = X + (τ′−τ)(ŷ−ε̂) = x′/(a′+σ′)</p>
+<p class="action">停在第 12 次更新之后，比较换算、原样用 v、只改符号的三个下一格。</p><nav aria-label="第 76 页的阅读与实验入口"><a class="primary" href="pixel-lab/path-clock.html#step">打开扩散与直线速度换算</a>
+<a href="video-diffusion-lab.html#pathStep">读图文版</a> <a href="video-diffusion-guide.pdf#page=76">翻到 PDF 第 76 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 path_coordinates.py</code></pre><p>实际源码 <a href="reproduce/path_coordinates.py">path_coordinates.py</a>，从第 39 行开始。</p>
+<pre tabindex="0"><code>def next_step(record, case, step, frame, row, col):
+    &quot;&quot;&quot;从原版 DDIM 真正保存的一格数据出发，按匹配的直线网格重做一次更新。&quot;&quot;&quot;
+    if not 0 &lt;= step &lt; record.steps:
+        raise ValueError(&quot;请选择仍有下一步的记录&quot;)
+    read = record.pixel(case, step, frame, row, col)
+    tau, state, speed = line_coordinates(read[&quot;state&quot;], read[&quot;v&quot;], read[&quot;a&quot;], read[&quot;sigma&quot;])
+    next_total = read[&quot;next_a&quot;] + read[&quot;next_sigma&quot;]
+    next_tau = read[&quot;next_a&quot;]/next_total
+    delta = next_tau-tau
+    return {**read, &quot;tau&quot;:tau, &quot;line&quot;:state, &quot;speed&quot;:speed, &quot;delta&quot;:delta, &quot;next_tau&quot;:next_tau,
+            &quot;euler&quot;:state+delta*speed, &quot;from_ddim&quot;:read[&quot;recorded_next&quot;]/next_total,
+            &quot;raw_v&quot;:state+delta*read[&quot;v&quot;], &quot;sign_only&quot;:state-delta*read[&quot;v&quot;]}</code></pre></details></div></details>
+<details class="card" id="p77" data-search="v_prediction v 参数化 流匹配 flow matching DDIM 欧拉 速度 坐标 时间表 直线 圆弧 path_rollout.line_sample">
+<summary><span class="page">77</span> <span>同一台网络，换成直线走，还能画回同一段吗？</span></summary>
+<div class="body"><p class="part">速度换算 / 四排影片</p><p class="formula">每次：由 X 还原 x 与角度时刻，问 v̂，转成 û，再沿直线刻度走</p>
+<p class="action">切换起始雪花；对照匹配刻度与均分直线刻度的六帧和误差。</p><nav aria-label="第 77 页的阅读与实验入口"><a class="primary" href="pixel-lab/path-clock.html#films">打开扩散与直线速度换算</a>
+<a href="video-diffusion-lab.html#pathFilms">读图文版</a> <a href="video-diffusion-guide.pdf#page=77">翻到 PDF 第 77 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 path_rollout.py --out replay/path-clock</code></pre><p>实际源码 <a href="reproduce/path_rollout.py">path_rollout.py</a>，从第 16 行开始。</p>
+<pre tabindex="0"><code>@torch.no_grad()
+def line_sample(model, initial, steps, *, uniform=False, raw=False):
+    &quot;&quot;&quot;每个分支从自己的状态调用网络。与原版相配的节点按 tau=a/(a+sigma) 排列。&quot;&quot;&quot;
+    nodes = []
+    for i in range(steps+1):
+        angle = (1-i/steps)*math.pi/2
+        a, b = math.cos(angle), math.sin(angle)
+        nodes.append(i/steps if uniform else a/(a+b))
+    nodes[0], nodes[-1] = 0., 1.
+    state = initial.clone()
+    states = [state]
+    for tau, following in zip(nodes, nodes[1:]):
+        a, b = coefficients(tau)
+        tick = 2/math.pi*math.atan2(b,a)
+        original_units = (a+b)*state
+        clock = torch.full((len(state),), tick, dtype=state.dtype, device=state.device)
+        v = model(original_units, clock)
+        _, _, speed = line_coordinates(original_units, v, a, b)
+        state = state + (following-tau)*(v if raw else speed)
+        states.append(state)
+    return nodes, states</code></pre></details></div></details>
+<details class="card" id="p78" data-search="入门 配对 误差 MAE 路标 错位 ControlNet 种子 评估 first_walk.road_trial">
+<summary><span class="page">78</span> <span>路标迟了一帧，怎么还有一段更准？</span></summary>
+<div class="body"><p class="part">入门练习 / 一段与整批</p><p class="formula">单帧差 = |迟到预测 − 真值| − |准时预测 − 真值|</p>
+<p class="action">选择种子 21、帧 2，再切到帧 3，读出同一段中两个相反的误差变化。</p><nav aria-label="第 78 页的阅读与实验入口"><a class="primary" href="video-diffusion-lab.html#walk-cohort">打开64 段路标对照</a>
+<a href="video-diffusion-lab.html#walkEvidence">读图文版</a> <a href="video-diffusion-guide.pdf#page=78">翻到 PDF 第 78 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 first_walk.py --cohort --seed 21</code></pre><p>实际源码 <a href="reproduce/first_walk.py">first_walk.py</a>，从第 15 行开始。</p>
+<pre tabindex="0"><code>def road_trial(seed, weights):
+    &quot;&quot;&quot;同一段的真实位置、观测和权重都固定，只把输入路标推迟一帧。&quot;&quot;&quot;
+    truth, marks, base, aligned, delayed = use_control(seed,weights)
+    timely_error = [abs(pred-y) for pred,y in zip(aligned,truth)]
+    late_error = [abs(pred-y) for pred,y in zip(delayed,truth)]
+    return {&quot;truth&quot;:truth, &quot;marks&quot;:marks, &quot;aligned&quot;:aligned, &quot;delayed&quot;:delayed,
+            &quot;aligned_error&quot;:timely_error, &quot;delayed_error&quot;:late_error,
+            &quot;difference&quot;:[late-ontime for late,ontime in zip(late_error,timely_error)],
+            &quot;aligned_mae&quot;:mean(timely_error), &quot;delayed_mae&quot;:mean(late_error),
+            &quot;base_mae&quot;:mean(abs(pred-y) for pred,y in zip(base,truth))}</code></pre></details></div></details>
+<details class="card" id="p79" data-search="Diffusers DDIMScheduler FlowMatchEulerDiscreteScheduler flow matching 裁剪 符号 调度器 scheduler_report.recompute">
+<summary><span class="page">79</span> <span>同一个像素交给 DDIM，为什么读数变了？</span></summary>
+<div class="body"><p class="part">开源实测 / 亮度裁剪</p><p class="formula">ŷ = ax − bv，ε̂ = bx + av，x′ = a′ŷ + b′ε̂</p>
+<p class="action">点一个亮格和一个黑格，比较裁剪前后的下一格，再用标准库计算相同的读数。</p><nav aria-label="第 79 页的阅读与实验入口"><a class="primary" href="scheduler-lab/index.html#ddim">打开开源调度器对照</a>
+<a href="video-diffusion-lab.html#libraryDDIM">读图文版</a> <a href="video-diffusion-guide.pdf#page=79">翻到 PDF 第 79 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 scheduler_report.py --kind ddim --step 13 --index 522</code></pre><p>实际源码 <a href="reproduce/scheduler_report.py">scheduler_report.py</a>，从第 16 行开始。</p>
+<pre tabindex="0"><code>def recompute(kind, row, x, v):
+    &quot;&quot;&quot;在同一个输入上，分别求原设置和改变一项设置后的下一格。&quot;&quot;&quot;
+    if kind == &quot;ddim&quot;:
+        a, b, c, d = row[&quot;coef&quot;]
+        clean = a*x - b*v
+        noise = b*x + a*v
+        limited = min(1., max(-1., clean))
+        return c*clean + d*noise, c*limited + d*noise
+    width = row[&quot;following&quot;] - row[&quot;sigma&quot;]
+    return x + width*(-v), x + width*v</code></pre></details></div></details>
+<details class="card" id="p80" data-search="Diffusers DDIMScheduler FlowMatchEulerDiscreteScheduler flow matching 裁剪 符号 调度器 f、k、τ frame timestep tau 影片帧 生成进度 调度器 scheduler_bridge.flow_run">
+<summary><span class="page">80</span> <span>接上流匹配调度器，方块怎么走偏了？</span></summary>
+<div class="body"><p class="part">开源实测 / 速度符号</p><p class="formula">τ = 1 − σ，x′ = x + (σ′−σ) × (−u)</p>
+<p class="action">在第 13 次更新看潜码的两个方向，再展开 24 步独立生成的三排影片。</p><nav aria-label="第 80 页的阅读与实验入口"><a class="primary" href="scheduler-lab/index.html#flow">打开开源调度器对照</a>
+<a href="video-diffusion-lab.html#libraryFlow">读图文版</a> <a href="video-diffusion-guide.pdf#page=80">翻到 PDF 第 80 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑使用 PyTorch 和 diffusers==0.35.1，CPU 可用。安装命令见实验页。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 scheduler_bridge.py --out replay/schedulers.json</code></pre><p>实际源码 <a href="reproduce/scheduler_bridge.py">scheduler_bridge.py</a>，从第 85 行开始。</p>
+<pre tabindex="0"><code>@torch.no_grad()
+def flow_run(root):
+    cpu = torch.device(&quot;cpu&quot;)
+    vae, base, branch, saved = load_trained(root, root / FILES[-1], cpu)
+    start = initial_states(1, cpu)
+    label, point = torch.tensor([RIGHT]), torch.tensor([[7, 3]])
+    hint = hint_map(point)
+    sampler, local_wrong, wrong = (flow_scheduler() for _ in range(3))
+    state, other = start.clone(), start.clone()
+    rows = []
+    for i, t in enumerate(sampler.timesteps):
+        sigma, following = sampler.sigmas[i:i+2]
+        tau = (1-sigma).reshape(1, 1)
+        u = velocity(base, branch, state, tau, label, hint, 1.)
+        accepted = sampler.step(-u, t, state).prev_sample
+        reversed_step = local_wrong.step(u, t, state).prev_sample
+        other_u = velocity(base, branch, other, tau, label, hint, 1.)
+        other = wrong.step(other_u, t, other).prev_sample
+        manual = state + (sigma-following)*u
+        rows.append({&quot;i&quot;: i, &quot;t&quot;: float(t), &quot;sigma&quot;: float(sigma), &quot;following&quot;: float(following),
+                     &quot;x&quot;: tensor_record(state[0]), &quot;v&quot;: tensor_record(u[0]),
+                     &quot;next&quot;: tensor_record(accepted[0]), &quot;alternate&quot;: tensor_record(reversed_step[0]),
+                     &quot;local&quot;: distance(manual, accepted)})
+        state = accepted
+    course = solve(base, branch, start, label, point, 1.)
+    clips = [vae.decode(saved[&quot;mean&quot;] + saved[&quot;spread&quot;] * z) for z in (course, state, other)]
+    return {&quot;shape&quot;: list(start.shape[1:]), &quot;seed&quot;: EVAL_SEED, &quot;steps&quot;: rows,
+            &quot;reference&quot;: distance(state, course), &quot;changed&quot;: distance(state, other),
+            &quot;centers&quot;: [brightest_centers(x)[0].tolist() for x in clips],
+            &quot;films&quot;: [byte_clips(x)[0] for x in clips]}</code></pre></details></div></details>
+<details class="card" id="p81" data-search="DDPM noise schedule beta alpha_bar alphas_cumprod add_noise 合并噪声 正向加噪 边缘分布 联合分布 相关系数 方差 ε、ε̂ epsilon eps noise 噪声 真值 预测 合并 β、A、σ beta alpha_bar alphas_cumprod sigma 方差 幅度 累积 forward_noise.two_steps">
+<summary><span class="page">81</span> <span>两次加噪，怎样一步算出同一张图？</span></summary>
+<div class="body"><p class="part">扩散入门 / 合并两次雪花</p><p class="formula">ε合 = (0.6rε₁ + √(1−r²)ε₂) / √(1−0.64r²)</p>
+<p class="action">把第二次雪花翻转，在逐步、合并与沿用三张图的橙框里找出一起变动的两张。</p><nav aria-label="第 81 页的阅读与实验入口"><a class="primary" href="prediction-lab/forward.html#pixel">打开两次加噪实验</a>
+<a href="video-diffusion-lab.html#noiseMerge">读图文版</a> <a href="video-diffusion-guide.pdf#page=81">翻到 PDF 第 81 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 forward_noise.py --noise -1 1</code></pre><p>实际源码 <a href="reproduce/forward_noise.py">forward_noise.py</a>，从第 17 行开始。</p>
+<pre tabindex="0"><code>def two_steps(y, e1, e2, keep=.75):
+    &quot;&quot;&quot;keep 是第二步保留旧状态的幅度系数，第一步固定为 0.8。&quot;&quot;&quot;
+    if not 0 &lt;= keep &lt;= 1:
+        raise ValueError(&quot;旧状态保留幅度须在 0 到 1 之间&quot;)
+    new = math.sqrt(1-keep**2)
+    signal = .8*keep
+    sigma = math.sqrt(1-signal**2)
+    first = .8*y + .6*e1
+    effective = (.6*keep*e1 + new*e2)/sigma
+    return {&quot;first&quot;:first, &quot;chain&quot;:keep*first+new*e2, &quot;effective&quot;:effective,
+            &quot;direct&quot;:signal*y+sigma*effective, &quot;reuse&quot;:signal*y+sigma*e1,
+            &quot;fresh&quot;:signal*y+sigma*e2, &quot;signal&quot;:signal, &quot;sigma&quot;:sigma, &quot;new&quot;:new}</code></pre></details></div></details>
+<details class="card" id="p82" data-search="DDPM noise schedule beta alpha_bar alphas_cumprod add_noise 合并噪声 正向加噪 边缘分布 联合分布 相关系数 方差 forward_noise.scatter">
+<summary><span class="page">82</span> <span>第二层的分布相同，两层之间也一样吗？</span></summary>
+<div class="body"><p class="part">扩散入门 / 同一层与同一条路径</p><p class="formula">固定原图后，逐步加噪的 E[x₂ | x₁] = r·x₁</p>
+<p class="action">只读三栏全体的青线，再将第一层窗口从 0.04 移到 1.24，对照棕线和窗口内均值。</p><nav aria-label="第 82 页的阅读与实验入口"><a class="primary" href="prediction-lab/forward.html#pairs">打开两次加噪实验</a>
+<a href="video-diffusion-lab.html#noisePairs">读图文版</a> <a href="video-diffusion-guide.pdf#page=82">翻到 PDF 第 82 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 forward_noise.py --group --at 0.04</code></pre><p>实际源码 <a href="reproduce/forward_noise.py">forward_noise.py</a>，从第 45 行开始。</p>
+<pre tabindex="0"><code>def scatter(seed, keep, at):
+    points={key:[] for key in MODES}
+    for e1,e2 in noise_pairs(seed,COUNT):
+        trial=two_steps(.8,e1,e2,keep)
+        for key in MODES:
+            points[key].append((trial[&quot;first&quot;],trial[key]))
+    rows={}
+    for key,pairs in points.items():
+        first,last=zip(*pairs)
+        mx,my=fmean(first),fmean(last)
+        sx=math.sqrt(fmean((x-mx)**2 for x in first))
+        sy=math.sqrt(fmean((y-my)**2 for y in last))
+        corr=fmean((x-mx)*(y-my) for x,y in pairs)/(sx*sy)
+        selected=[y for x,y in pairs if at-HALF_WINDOW &lt;= x &lt; at+HALF_WINDOW]
+        rows[key]={&quot;mean&quot;:my,&quot;sd&quot;:sy,&quot;corr&quot;:corr,&quot;n&quot;:len(selected),
+                   &quot;window_mean&quot;:fmean(selected) if selected else None}
+    return points,rows</code></pre></details></div></details>
+<details class="card" id="p83" data-search="ControlNet control_guidance_start control_guidance_end 时段 早开 晚开 控制窗口 control_window.compare">
+<summary><span class="page">83</span> <span>只在前十二步给路标，后面会忘掉吗？</span></summary>
+<div class="body"><p class="part">控制时段 / 在半程切换</p><p class="formula">λₖ = λ × 1[起点 ≤ k &lt; 终点]，x′ = x + u(x, τ, λₖ) / 24</p>
+<p class="action">固定种子和点图，先把窗口宽度设为12，生成四排。停在第13次更新，找出共享输入但速度不同的两排。</p><nav aria-label="第 83 页的阅读与实验入口"><a class="primary" href="flow-hint/first-film.html#when">打开位置提示时段实验</a>
+<a href="video-diffusion-lab.html#windowFilm">读图文版</a> <a href="video-diffusion-guide.pdf#page=83">翻到 PDF 第 83 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。复跑网络需 PyTorch，CPU 可用。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 control_window.py --sample --width 12 --out replay/my-window</code></pre><p>实际源码 <a href="reproduce/control_window.py">control_window.py</a>，从第 20 行开始。</p>
+<pre tabindex="0"><code>@torch.no_grad()
+def compare(weights, start, targets, labels, width, strength, focus):
+    &quot;&quot;&quot;四排各自做完 24 步。每次独立问速度，保持同题的起点、方向与权重一致。&quot;&quot;&quot;
+    vae,base,branch,saved=weights
+    runs={}
+    for mode,window in windows(width).items():
+        path=[patchify(start[focus:focus+1])[0,8,0].item()]
+        speeds=[]
+        def observe(k,state,v,following,t,hint):
+            speeds.append(patchify(v[focus:focus+1])[0,8,0].item())
+            path.append(patchify(following[focus:focus+1])[0,8,0].item())
+        end=solve(base,branch,start,labels,targets[:,0],strength,observe,control_window=window)
+        decoded=vae.decode(saved[&quot;mean&quot;]+saved[&quot;spread&quot;]*end)
+        runs[mode]={&quot;window&quot;:list(window), &quot;centers&quot;:brightest_centers(decoded).tolist(),
+                    &quot;path&quot;:path,&quot;speeds&quot;:speeds,&quot;film&quot;:byte_clips(decoded[focus:focus+1])[0]}
+    return runs</code></pre></details></div></details>
+<details class="card" id="p84" data-search="ControlNet 半程 提示 时段 配对 命中 早开 晚开 window_report.judge">
+<summary><span class="page">84</span> <span>同样开十二步，晚开每次都更准吗？</span></summary>
+<div class="body"><p class="part">控制时段 / 配对路线</p><p class="formula">晚开全中数 − 早开全中数 = 仅晚开全中数 − 仅早开全中数</p>
+<p class="action">选择仅前段中，检查种子9317的路线7，拖动帧号核对两排在哪一帧分开。</p><nav aria-label="第 84 页的阅读与实验入口"><a class="primary" href="flow-hint/window-scores.html#paired">打开早晚时段逐题成绩</a>
+<a href="video-diffusion-lab.html#windowGrade">读图文版</a> <a href="video-diffusion-guide.pdf#page=84">翻到 PDF 第 84 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 window_report.py --case 7</code></pre><p>实际源码 <a href="reproduce/window_report.py">window_report.py</a>，从第 14 行开始。</p>
+<pre tabindex="0"><code>def judge(data):
+    &quot;&quot;&quot;每题的两条生成路线都与同一个目标逐帧配对。六帧全对才记为全中。&quot;&quot;&quot;
+    rows=[]
+    for i,target in enumerate(data[&quot;targets&quot;]):
+        counts={mode:sum(a==b for a,b in zip(run[&quot;centers&quot;][i],target))
+                for mode,run in data[&quot;runs&quot;].items()}
+        early,late=(counts[m]==len(target) for m in (&quot;early&quot;,&quot;late&quot;))
+        category=(&quot;both&quot; if late else &quot;early&quot;) if early else (&quot;late&quot; if late else &quot;neither&quot;)
+        rows.append({&quot;counts&quot;:counts,&quot;category&quot;:category})
+    return rows</code></pre></details></div></details>
+<details class="card" id="p85" data-search="深度 depth ControlVideo ControlNet 原版 预训练 球 RGB 跳跃连接 depth_report.differences">
+<summary><span class="page">85</span> <span>只挪中间一帧的球，下一帧会怎样？</span></summary>
+<div class="body"><p class="part">深度控制 / 五帧成片</p><p class="formula">RGB 平均绝对差 = 三通道绝对差之和 ÷ (3 × 宽 × 高)</p>
+<p class="action">先在帧 3 选择像素 (152,102)，把控制强度从 1 调到 0，再比较 A、B 两次生成。</p><nav aria-label="第 85 页的阅读与实验入口"><a class="primary" href="depth-lab/index.html#films">打开预训练深度控制影片</a>
+<a href="video-diffusion-lab.html#depthFilm">读图文版</a> <a href="video-diffusion-guide.pdf#page=85">翻到 PDF 第 85 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 depth_report.py --frame 3 --pixel 152 102</code></pre><p>实际源码 <a href="reproduce/depth_report.py">depth_report.py</a>，从第 33 行开始。</p>
+<pre tabindex="0"><code>def differences(a,b):
+    &quot;&quot;&quot;以 8 位 RGB 的三个通道为单位取绝对差，同时统计至少一通道不同的像素。&quot;&quot;&quot;
+    if len(a)!=len(b) or not len(a) or len(a)%3:
+        raise ValueError(&quot;两幅 RGB 图需有相同的尺寸&quot;)
+    d=bytes(abs(x-y) for x,y in zip(a,b))
+    changed=sum(bool(r or g or b) for r,g,b in struct.iter_unpack(&quot;BBB&quot;,d))
+    return {&quot;mae&quot;:sum(d)/len(d),&quot;changed&quot;:changed}</code></pre></details></div></details>
+<details class="card" id="p86" data-search="深度 depth ControlVideo ControlNet 原版 预训练 球 RGB 跳跃连接 depth_report.readout">
+<summary><span class="page">86</span> <span>支路送来的修正，解码器真的收到了吗？</span></summary>
+<div class="body"><p class="part">深度控制 / 第一处加法</p><p class="formula">进入解码器的特征 h′ = h + r，其中 r 已乘以 λ</p>
+<p class="action">选帧 2、第 16 列第 12 行，核对两次生成的第一处特征加法。再换到帧 3。</p><nav aria-label="第 86 页的阅读与实验入口"><a class="primary" href="depth-lab/index.html#sum">打开预训练深度控制影片</a>
+<a href="video-diffusion-lab.html#depthFeature">读图文版</a> <a href="video-diffusion-guide.pdf#page=86">翻到 PDF 第 86 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 depth_report.py --frame 2 --feature 16 12</code></pre><p>实际源码 <a href="reproduce/depth_report.py">depth_report.py</a>，从第 42 行开始。</p>
+<pre tabindex="0"><code>def readout(trace,frame,col,row):
+    &quot;&quot;&quot;读 CFG 正面文字分支、最高分辨率的第一个出口、通道 0。&quot;&quot;&quot;
+    frames,h,w=trace[&quot;h&quot;][&quot;shape&quot;]
+    if not (0&lt;=frame&lt;frames and 0&lt;=col&lt;w and 0&lt;=row&lt;h):
+        raise ValueError(&quot;选中的特征坐标超出已记录范围&quot;)
+    index=(frame*h+row)*w+col
+    vals={k:struct.unpack_from(&quot;&lt;f&quot;,base64.b64decode(trace[k][&quot;data&quot;]),4*index)[0] for k in KEYS}
+    vals[&quot;fp16_sum&quot;]=struct.unpack(&quot;&lt;e&quot;,struct.pack(&quot;&lt;e&quot;,vals[&quot;h&quot;]+vals[&quot;r&quot;]))[0]
+    return vals</code></pre></details></div></details>
+<details class="card" id="p87" data-search="入门 四格 视频扩散 流匹配 flow matching ControlNet 位置控制 DDIM v 欧拉 route_pair.update">
+<summary><span class="page">87</span> <span>流匹配也能按指定的行走吗？</span></summary>
+<div class="body"><p class="part">入门对照 / 两种任务与位置控制</p><p class="formula">h′ = h + λr；直线流匹配 x 下一格 = x + u/24</p>
+<p class="action">只改首帧指定行，检查四段影片中哪两段换行。再比较同一进度下两张训练题的答案。</p><nav aria-label="第 87 页的阅读与实验入口"><a class="primary" href="pair-lab/index.html#matrix">打开两台生成器的位置控制对照</a>
+<a href="video-diffusion-lab.html#methodPair">读图文版</a> <a href="video-diffusion-guide.pdf#page=87">翻到 PDF 第 87 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 route_pair.py --seed 1700 --row 3</code></pre><p>实际源码 <a href="reproduce/route_pair.py">route_pair.py</a>，从第 54 行开始。</p>
+<pre tabindex="0"><code>def update(task,x,pred,t,dt):
+    if task==&quot;flow&quot;:
+        return [v+dt*u for v,u in zip(x,pred)]
+    angle=t*math.pi/2
+    a,s=math.sin(angle),math.cos(angle)
+    na,ns=math.sin((t+dt)*math.pi/2),math.cos((t+dt)*math.pi/2)
+    # v 预测恢复干净值和噪声，再用下一个时刻的系数配比（确定性 DDIM）。
+    return [na*(a*v-s*u)+ns*(s*v+a*u) for v,u in zip(x,pred)]</code></pre></details></div></details>
+<details class="card" id="p88" data-search="目录 阅读地图 主题 笔记本 notebook Jupyter 速度场 入门 概率 两条目标行 lane_lessons.noise_problem">
+<summary><span class="page">88</span> <span>我想弄懂的这个问题，从哪里开始？</span></summary>
+<div class="body"><p class="part">阅读地图 / 按问题找图和代码</p><p class="formula">还原偏差 = −(σ/a) × 噪声猜测误差</p>
+<p class="action">打开笔记本的去噪题，令噪声猜测误差为零，再从头运行。观察框内读数是否回到原片亮度。</p><nav aria-label="第 88 页的阅读与实验入口"><a class="primary" href="starter-lab/index.html">打开四道可编辑的笔记本练习</a>
+<a href="video-diffusion-lab.html#studyMap">读图文版</a> <a href="video-diffusion-guide.pdf#page=88">翻到 PDF 第 88 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 lane_lessons.py --start 0.4 --steps 12</code></pre><p>实际源码 <a href="reproduce/lane_lessons.py">lane_lessons.py</a>，从第 14 行开始。</p>
+<pre tabindex="0"><code>def noise_problem(noise_error):
+    original = square(frame=2, row=3)
+    rng = Random(17)
+    noise = [[rng.gauss(0,1) for x in range(16)] for y in range(12)]
+    a = 0.8
+    sigma = sqrt(1-a*a)
+    mixed = [[a*y + sigma*z for y,z in zip(pixels,snow)]
+             for pixels,snow in zip(original,noise)]
+    # 已知这次出题用的噪声，给每一格的猜测故意加同样的误差。
+    restored = [[(x-sigma*(z+noise_error))/a for x,z in zip(pixels,snow)]
+                for pixels,snow in zip(mixed,noise)]
+    return original, mixed, restored</code></pre></details></div></details>
+<details class="card" id="p89" data-search="目录 阅读地图 主题 笔记本 notebook Jupyter 速度场 入门 概率 两条目标行 lane_lessons.lane_path">
+<summary><span class="page">89</span> <span>只用几行 Python，噪声能分到两行吗？</span></summary>
+<div class="body"><p class="part">独立练习 / 两条目标行</p><p class="formula">平均速度 = (可能终点的条件均值 − 当前坐标) / (1−t)</p>
+<p class="action">先从 0.4 只走 1 步，再改成 12 步。把起点设为 0，查看完全对称的位置。</p><nav aria-label="第 89 页的阅读与实验入口"><a class="primary" href="starter-lab/index.html#flow">打开四道可编辑的笔记本练习</a>
+<a href="video-diffusion-lab.html#laneCode">读图文版</a> <a href="video-diffusion-guide.pdf#page=89">翻到 PDF 第 89 页</a></nav>
+<details class="code"><summary>看这一步的代码与运行命令</summary>
+<p>在解压包的 <code>reproduce</code> 目录运行。此命令只用 Python 标准库。 Windows 可将 <code>python3</code> 换成 <code>py -3</code>。</p>
+<pre><code>python3 lane_lessons.py --start 0.4 --steps 12</code></pre><p>实际源码 <a href="reproduce/lane_lessons.py">lane_lessons.py</a>，从第 34 行开始。</p>
+<pre tabindex="0"><code>def lane_path(z, steps):
+    if steps &lt; 1:
+        raise ValueError(&quot;至少走一步&quot;)
+    path = [z]
+    for k in range(steps):
+        t = k/steps
+        x = path[-1]
+        path.append(x + lane_speed(x,t)/steps)
+    return path</code></pre></details></div></details></section></main>
+<script>
+"use strict";
+const query=document.getElementById("query"),cards=Array.from(document.querySelectorAll("details.card"));
+const norm=s=>s.normalize("NFKC").trim().toLowerCase();
+const records=cards.map(card=>({card,keywords:norm([card.dataset.search,card.querySelector("summary").textContent,
+  card.querySelector(".formula").textContent,card.querySelector(".action").textContent,card.querySelector(".part").textContent,
+  card.querySelector(".primary").textContent,card.querySelector(".code a").textContent].join(" "))}));
+function select(value){
+  query.value=value;
+  const word=norm(value), page=word.match(/^(?:第\s*)?(\d+)\s*(?:页)?$/),terms=word.split(/\s+/).filter(Boolean);
+  let count=0;
+  for(const {card,keywords} of records){
+    const hit=page?card.id==="p"+Number(page[1]):terms.every(term=>keywords.includes(term));
+    card.hidden=!hit;card.open=Boolean(hit&&page);if(hit)count++;
+  }
+  if(count===1){const only=cards.find(card=>!card.hidden);only.open=true}
+  document.getElementById("empty").hidden=count!==0;
+  document.getElementById("status").textContent=word?"找到 "+count+" 页。":"共 89 页，可直接展开问题。";
+}
+function loadRoute(){
+  const params=new URLSearchParams(location.search),anchor=location.hash.slice(1);
+  if(anchor==="symbols"){document.getElementById("symbols").open=true;select("");return}
+  if(/^p\d+$/.test(anchor))select(anchor.slice(1));
+  else if(anchor.startsWith("q="))select(new URLSearchParams(anchor).get("q")||"");
+  else select(anchor==="all"?"":params.get("q")||"");
+}
+function commit(){
+  const val=query.value.trim(),numeric=norm(val).match(/^(?:第\s*)?(\d+)\s*(?:页)?$/);
+  const next=numeric?"p"+Number(numeric[1]):val?"q="+encodeURIComponent(val):"all";
+  if(location.hash.slice(1)===next)loadRoute();else location.hash=next;
+}
+document.querySelectorAll(".examples a,#symbols a").forEach(link=>link.addEventListener("click",()=>select(link.hash.slice(2))));
+query.addEventListener("input",()=>select(query.value));
+document.getElementById("lookup").onsubmit=e=>{e.preventDefault();commit()};
+for(const id of ["all","clear"])document.getElementById(id).onclick=()=>{query.value="";commit();query.focus()};
+window.addEventListener("hashchange",loadRoute);loadRoute();
+</script></body></html>

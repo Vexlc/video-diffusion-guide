@@ -1,0 +1,99 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>两次雪花怎样合成一次</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f1f4ed;color:#193540;font:17px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:1010px;margin:auto;padding:clamp(14px,3vw,36px)}h1,h2,h3{line-height:1.3}h1{font:700 clamp(30px,5vw,50px)/1.3 "Noto Serif CJK SC",serif;margin:16px 0}h2{font-size:25px;margin:0}h3{font-size:17px;margin:0 0 8px}p{max-width:80ch}a{color:#00695f}section{background:#fffef9;padding:clamp(14px,2.7vw,26px);border:1px solid #cedbd1;border-radius:8px;margin:20px 0}label{display:flex;gap:6px;align-items:center;flex-wrap:wrap}input,button{font:inherit}input[type=number]{width:5.6em;padding:.15em}.controls{display:flex;flex-wrap:wrap;gap:12px 20px;margin:12px 0}.hint{font-size:14px;color:#455e62}.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.tile{min-width:0}.tile canvas,.plot canvas{width:100%;display:block}.tile canvas{image-rendering:pixelated}.tile b{font-variant-numeric:tabular-nums}.calculation{background:#eaf3ec;border-left:4px solid #007263;padding:10px 14px;font-variant-numeric:tabular-nums}.calculation p{margin:4px 0}.group{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.plot{padding:9px;background:#f5f7f1}.plot p{font-size:15px;margin:7px 0}.plot strong{color:#00665d}button{padding:.25em .65em;cursor:pointer}pre{background:#eaf1ea;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}input[type=range]{accent-color:#00685e;width:min(180px,48vw)}section:target{scroll-margin-top:12px}@media(max-width:700px){.strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.group{grid-template-columns:1fr}.plot canvas{max-width:320px}.tile h3{font-size:15px}}
+</style><main>__NAV__<h1>两次雪花怎样合成一次？</h1><p>在第 7 页的车身上选同一格亮度。先跟着它走两步，再看一大批题。前者检验能否复现一个结果，后者检验抽到各类结果的机会。</p>
+<section id="pixel"><h2>一、盯住车身的橙框</h2><p>干净亮度是 0.8。第一步保留原图的 0.8 倍，第二步再保留旧图的一部分。试着只把第二次雪花从 +1 改成 −1，哪两张图还会逐格重合？</p>
+<div class="controls"><label>第一次雪花 ε₁ <input id="one" type="number" step="any"></label><label>第二次雪花 ε₂ <input id="two" type="number" step="any"></label><button id="flip">翻转第二次雪花</button></div>
+<div class="controls"><label>第二步保留幅度 r <input id="keep" type="range" min="0" max="1" step="any"><output id="rval"></output></label><button id="reset">恢复本页初值</button></div>
+<p id="invalid" class="hint" role="status" hidden>请输入完整的数字以刷新图和读数。</p><div class="strip" id="strip"></div><p class="hint">灰度只用于显示。每张图底下的数是橙框内原始浮点亮度。两个雪花输入只改框内这一格，保留幅度作用到整张图和下面的统计。</p><div class="calculation" aria-live="polite" id="work"></div></section>
+<section id="pairs"><h2>二、先看全体，再只看第一层相近的题</h2><p>每题的干净值都是 0.8，重复 4,096 次。每个散点横着读第一层，竖着读第二层。试把窗口移到第一层亮度 1.24，观察哪排分布跟着移动。</p>
+<div class="controls"><label>窗口中心 x₁ <input id="at" type="number" step="any"></label><button id="bright">看亮处 1.24</button><button id="dark">看暗处 0.04</button></div>
+<p class="hint" id="chartnote"></p><div class="group" id="clouds"></div>
+<p>橙带固定第一层的一小段范围。三图中的青线数各自的全部样本，棕线只数进入橙带的样本。每条线按自己的样本数归一，各行内三栏共用纵轴。相关系数接近 1 表示两层亮度接近落在同一条上升直线上。</p></section>
+<section><h2>从这里读回论文与代码</h2><p>DDPM 论文的式 (2) 每次从上一层加新噪声，式 (4) 从干净图直接抽指定的一层。Diffusers 的 add_noise 接收调用者传入的 noise。想重现逐步所得的同一张图，就传入两步的合并雪花。</p><p><a href="https://arxiv.org/pdf/2006.11239#page=2">DDPM 原论文</a> · <a href="https://github.com/huggingface/diffusers/blob/v0.35.1/src/diffusers/schedulers/scheduling_ddpm.py#L501-L525">Diffusers 0.35.1 源码</a></p>
+<p>在解压包的 <code>reproduce</code> 目录中运行。可改种子重新生成网页，在输出目录打开 <code>forward.html</code>。</p><pre id="command"></pre></section></main>
+<script type="application/json" id="payload">__DATA__</script><script>
+"use strict";
+const cfg=JSON.parse(document.getElementById("payload").textContent),$=id=>document.getElementById(id);
+const keys=['chain','reuse','fresh'],names=['逐步抽新噪声','两层共用 ε₁','第二层独立直抽'],single=['clean','first','chain','direct','reuse'];
+const tiles=['最初的车','第一层','第二层 · 逐步','第二层 · 合并','第二层 · 沿用 ε₁'];
+const fmt=v=>v.toFixed(4),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+for(const [i,key] of single.entries()){
+ const el=document.createElement('div');el.className='tile';
+ el.innerHTML='<h3>'+tiles[i]+'</h3><canvas width="192" height="120" role="img" aria-label="'+tiles[i]+'的车身"></canvas><b></b>';
+ $('strip').append(el);
+}
+for(const [i,key] of keys.entries()){
+ const el=document.createElement('div');el.className='plot';
+ el.innerHTML='<h3>'+names[i]+'</h3><canvas width="480" height="380" role="img" aria-label="两层散点与两排分布折线"></canvas><div class="summary"></div>';
+ $('clouds').append(el);
+}
+function params(r){return {r,newNoise:Math.sqrt(1-r*r),signal:.8*r,sigma:Math.sqrt(1-(.8*r)**2)}}
+function calculate(y,a,b,p){
+ const first=.8*y+.6*a, effective=(.6*p.r*a+p.newNoise*b)/p.sigma;
+ return {clean:y,first,chain:p.r*first+p.newNoise*b,direct:p.signal*y+p.sigma*effective,effective,
+   reuse:p.signal*y+p.sigma*a,fresh:p.signal*y+p.sigma*b};
+}
+function renderImage(p,e1,e2){
+ const tileData=cfg.image.map(([y,a,b],i)=>calculate(y,i===744?e1:a,i===744?e2:b,p)),obj=tileData[744];
+ for(const [i,key] of single.entries()){
+  const el=$('strip').children[i],ctx=el.querySelector('canvas').getContext('2d');
+  for(const [j,t] of tileData.entries()){const b=Math.round(clamp((t[key]+1)*127.5,0,255));ctx.fillStyle='rgb('+[b,b,b]+')';ctx.fillRect((j%48)*4,Math.floor(j/48)*4,4,4)}
+  ctx.strokeStyle='#fc6a2e';ctx.lineWidth=2;ctx.strokeRect(94,58,8,8);
+  el.querySelector('b').textContent=fmt(obj[key]);
+ }
+ const err=Math.max(...tileData.map(t=>Math.abs(t.chain-t.direct)));
+ $('work').innerHTML='<p>逐步走　x₁ = 0.8 × 0.8 + 0.6 × ('+fmt(e1)+') = <b>'+fmt(obj.first)+'</b></p><p>第二层　x₂ = '+fmt(p.r)+' × x₁ + '+fmt(p.newNoise)+' × ('+fmt(e2)+') = <b>'+fmt(obj.chain)+'</b></p><p>合并雪花　ε = ('+fmt(.6*p.r*e1)+' + '+fmt(p.newNoise*e2)+') / '+fmt(p.sigma)+' = <b>'+fmt(obj.effective)+'</b></p><p>一次直达　x₂ = '+fmt(p.signal)+' × 0.8 + '+fmt(p.sigma)+' × ε = <b>'+fmt(obj.direct)+'</b></p><p>逐步与合并的整图最大绝对差　'+err.toExponential(2)+'（1,440 格，裁剪前）</p>';
+}
+function stats(rows,at){
+ const all=Array(28).fill(0),windowBins=Array(28).fill(0),n=rows.length;
+ const mx=rows.reduce((s,r)=>s+r[0],0)/n,my=rows.reduce((s,r)=>s+r[1],0)/n;
+ let xx=0,xy=0,yy=0,hits=0,sum=0;
+ for(const [x,y] of rows){
+  const bin=clamp(Math.floor((y+2.3)/.2),0,27);all[bin]++;
+  xx+=(x-mx)**2;xy+=(x-mx)*(y-my);yy+=(y-my)**2;
+  if(x>=at-cfg.half&&x<at+cfg.half){hits++;sum+=y;windowBins[bin]++}
+ }
+ return {all:all.map(n0=>n0/n),window:windowBins.map(n0=>hits?n0/hits:0),hits,mean:my,sd:Math.sqrt(yy/n),corr:xy/Math.sqrt(xx*yy),windowMean:hits?sum/hits:null};
+}
+function chart(canvas,rows,s,at,peaks){
+ const ctx=canvas.getContext('2d');ctx.setTransform(2,0,0,2,0,0);ctx.clearRect(0,0,240,190);
+ const lo=-1.6,hi=2.8,x0=22,w=203,h=78,y0=4,xx=x=>x0+(x-lo)*w/(hi-lo),yy=y=>y0+(hi-y)*h/(hi-lo);
+ ctx.fillStyle='#e9efe9';ctx.fillRect(x0,y0,w,h);
+ const left=clamp(at-cfg.half,lo,hi),right=clamp(at+cfg.half,lo,hi);
+ ctx.fillStyle='#f4d5ab';ctx.fillRect(xx(left),y0,xx(right)-xx(left),h);
+ ctx.strokeStyle='#bccac0';ctx.beginPath();ctx.moveTo(xx(0),y0);ctx.lineTo(xx(0),y0+h);ctx.moveTo(x0,yy(0));ctx.lineTo(x0+w,yy(0));ctx.stroke();
+ for(const [x,y] of rows.slice(0,320)){
+  if(x<lo||x>hi||y<lo||y>hi)continue;ctx.fillStyle=x>=at-cfg.half&&x<at+cfg.half?'#a94c2e':'#00695f';
+  ctx.beginPath();ctx.arc(xx(x),yy(y),1.35,0,2*Math.PI);ctx.fill();
+ }
+ ctx.font='11px sans-serif';ctx.fillStyle='#445e64';ctx.fillText('−1.6',x0,96);ctx.fillText('2.8',x0+w-16,96);ctx.fillText('第一层 →',92,96);ctx.fillText('0',9,yy(0)+3);
+ for(const [i,arr] of [s.all,s.window].entries()){
+  const base=132+i*38;ctx.strokeStyle='#c8d4cb';ctx.beginPath();ctx.moveTo(x0,base);ctx.lineTo(x0+w,base);ctx.stroke();
+  ctx.strokeStyle=i?'#a94c2e':'#00695f';ctx.fillStyle=ctx.strokeStyle;ctx.fillText(i?'入窗':'全体',0,base-12);
+  ctx.beginPath();arr.forEach((v,k)=>{const x=x0+(k+.5)*w/28,y=base-29*v/peaks[i];if(k)ctx.lineTo(x,y);else ctx.moveTo(x,y)});ctx.stroke();
+ }
+ ctx.fillStyle='#445e64';ctx.fillText('−2.3',x0,187);ctx.fillText('3.3',x0+w-16,187);ctx.fillText('第二层亮度 →',81,187);
+}
+function renderGroup(p,at){
+ const samples=cfg.pairs.map(([a,b])=>calculate(.8,a,b,p));
+ const rows=keys.map(key=>samples.map(s=>[s.first,s[key]])),summary=rows.map(v=>stats(v,at));
+ const peaks=['all','window'].map(key=>Math.max(...summary.map(v=>Math.max(...v[key])))||1);
+ const mu=.8*p.signal, cond=[p.r*at,mu+p.sigma*(at-.64)/.6,mu],spread=[p.newNoise,0,p.sigma],rho=[.6*p.r/p.sigma,1,0];
+ $('chartnote').textContent='种子 '+cfg.seed+'。样本窗口 ['+(at-cfg.half).toFixed(3)+', '+(at+cfg.half).toFixed(3)+')，选中 '+summary[0].hits+' / '+samples.length+' 对。散点显示前 320 对落在绘图区内的点，分箱和数字使用全部样本。';
+ keys.forEach((key,i)=>{
+   const el=$('clouds').children[i],s=summary[i];chart(el.querySelector('canvas'),rows[i],s,at,peaks);
+   el.querySelector('.summary').innerHTML='<p>第二层全体均值 '+fmt(s.mean)+'，标准差 '+fmt(s.sd)+'。</p><p>两层相关　实测 <strong>'+fmt(s.corr)+'</strong>，理论 '+fmt(rho[i])+'。</p><p>窗口内均值 <strong>'+(s.hits?fmt(s.windowMean):'无样本')+'</strong>。</p><p>恰好给定 x₁ = '+fmt(at)+' 时，理论中心为 '+fmt(cond[i])+'，标准差为 '+fmt(spread[i])+'。</p>';
+ });
+}
+function update(){
+ const e1=$('one').valueAsNumber,e2=$('two').valueAsNumber,r=$('keep').valueAsNumber,at=$('at').valueAsNumber;
+ const valid=[e1,e2,r,at].every(Number.isFinite);$('invalid').hidden=valid;if(!valid)return;
+ const p=params(r);$('rval').value=r.toFixed(3);renderImage(p,e1,e2);renderGroup(p,at);
+ $('command').textContent='python3 forward_noise.py --keep '+r+' --noise '+e1+' '+e2+'\npython3 forward_noise.py --group --at '+at+' --seed '+cfg.seed+' --keep '+r+' --noise '+e1+' '+e2+' --out replay/forward';
+}
+function reset(){$('one').value=cfg.e1;$('two').value=cfg.e2;$('keep').value=cfg.keep;$('at').value=cfg.at;update()}
+for(const id of ['one','two','at','keep'])$(id).addEventListener('input',update);
+$('flip').onclick=()=>{$('two').value=-$('two').valueAsNumber;update()};$('reset').onclick=reset;
+$('bright').onclick=()=>{$('at').value=1.24;update()};$('dark').onclick=()=>{$('at').value=.04;update()};reset();
+</script></html>

@@ -1,0 +1,35 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>四道可以改数的生成模型练习</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f4ed;color:#19383c;font:17px/1.7 "MiSans","Microsoft YaHei",sans-serif}main{max-width:850px;margin:auto;padding:clamp(15px,4vw,46px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.35}h1{font-size:clamp(30px,5vw,49px);margin:.35em 0}h2{font-size:clamp(22px,3.5vw,31px);margin:.3em 0}p{margin:.55em 0}a,summary{color:#00645b;text-underline-offset:3px}nav{display:flex;gap:10px 24px;flex-wrap:wrap}section{background:#fffdf7;padding:clamp(13px,3vw,26px);border-top:3px solid #00685d;margin:22px 0}figure{margin:10px 0}figure svg{display:block;width:100%;height:auto}pre{background:#eff3ee;padding:12px;overflow-x:auto;line-height:1.55}summary{cursor:pointer}small{color:#406260;font-weight:bold}.download{display:inline-block;padding:6px 12px;color:white;background:#00645b;border-radius:4px;text-decoration:none}.hint{font-size:.95em}a:focus-visible,summary:focus-visible{outline:3px solid #ae532c;outline-offset:3px}
+.variants{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.variants button{font:inherit;border:1px solid #78978d;background:white;color:#284945;border-radius:4px;padding:3px 10px;cursor:pointer}.variants button[aria-pressed=true]{background:#00665c;color:white}.variants button:focus-visible,figure:focus-visible{outline:3px solid #ae532c;outline-offset:2px}[hidden]{display:none!important}@media(max-width:540px){figure{overflow-x:auto}figure svg{min-width:510px}.scrolltip{display:block}}@media(min-width:541px){.scrolltip{display:none}}
+</style><main><nav>__NAV__</nav><h1>四道可以改数的生成模型练习</h1>
+<p>先选一题，猜结果，再按图上方的按钮换一组参数。四道题的图都来自下方可查看的 Python 代码。</p>
+<nav aria-label="四个实验"><a href="#noise">去噪</a><a href="#flow">流匹配</a><a href="#video">视频</a><a href="#control">控制</a></nav>
+<details id="python"><summary><b>用自己的参数画四张图</b> · 只需 Python 3</summary>
+<p>下载 <a href="__SCRIPT__" download="first_lab.py">first_lab.py</a>，在保存它的文件夹打开终端。解压包里的同一个脚本放在 <code>starter-lab</code> 文件夹。以下命令在 macOS 或 Linux 中运行；Windows 安装了 Python 启动器时，将开头的 <code>python3</code> 换为 <code>py -3</code>。若本机用 <code>python</code> 启动 Python 3，也可用这个名字。</p>
+<pre><code>python3 first_lab.py --out before.html
+python3 first_lab.py --noise-error 0 --out after.html</code></pre>
+<p>双击两份网页。第一张图最右边橙框的亮度应从 <b>0.6875</b> 变成 <b>0.8000</b>。另三张图沿用原来的参数，可以逐张对照。每份网页都能单独复制到别处打开。</p>
+<p>再试一次流匹配。运行下面这行，然后打开 <code>two.html</code>。看第二张图的橙线，猜它能不能到达目标行 +1。</p>
+<pre><code>python3 first_lab.py --steps 2 --out two.html</code></pre>
+<details><summary>核对流匹配终点</summary><p>同样从 0.4 起步，一步到 0，两步到 0.3799，默认十二步约到 1。在自己画的两步图下面展开“把橙线的一步拆开算”。第一步速度 −0.4000，走半步到 0.2000。此时速度变成 +0.3599，第二步就转向了 +1。</p></details></details>
+<details><summary>在 Jupyter 中编辑每道题</summary><p><a class="download" href="__DOWNLOAD__" download="first-lab.ipynb">下载可编辑的笔记本</a>　用 JupyterLab 或支持 Jupyter 的编辑器打开，选择 Python 3 内核，从头运行一次，再单独改各题的参数。笔记本内含绘图代码与默认结果，只用标准库。</p></details>
+<small class="scrolltip">在窄屏上可以横滑查看整张图。</small>__LESSONS__</main>
+<script>
+function openLinkedExercise(){
+  if(location.hash==="#python"){
+    document.getElementById("python").open=true;
+  }
+}
+openLinkedExercise();
+window.addEventListener("hashchange",openLinkedExercise);
+document.querySelectorAll("section").forEach(section=>{
+  const buttons=section.querySelectorAll("[data-pick]");
+  buttons.forEach(button=>button.addEventListener("click",()=>{
+    const index=button.dataset.pick;
+    buttons.forEach(b=>b.setAttribute("aria-pressed",String(b===button)));
+    section.querySelectorAll("[data-run]").forEach(panel=>panel.hidden=panel.dataset.run!==index);
+  }));
+});
+</script></html>

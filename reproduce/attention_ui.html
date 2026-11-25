@@ -1,0 +1,89 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一条消息怎样穿过视频帧 · 从雪花到运动</title>
+<style>
+*{box-sizing:border-box}body{margin:0;color:#19383b;background:#f4f5ef;font:17px/1.65 "MiSans","Microsoft YaHei",sans-serif}main{max-width:1020px;margin:auto;padding:clamp(16px,3.8vw,42px)}h1,h2{font-family:"Noto Serif CJK SC",serif;line-height:1.3}h1{font-size:clamp(32px,5vw,51px);margin:.35em 0}h2{font-size:clamp(22px,3vw,29px);margin:0 0 .3em}p{margin:.55em 0}a,summary{color:#006257}nav,.controls{display:flex;gap:9px 15px;align-items:center;flex-wrap:wrap}nav{font-size:15px;margin-bottom:24px}section{background:#fffefa;padding:clamp(14px,3vw,24px);margin:18px 0;border:1px solid #c4d3ca;border-radius:7px}.controls{margin:14px 0}.controls label{display:flex;gap:7px;align-items:center;flex-wrap:wrap;max-width:100%}select,button,input{font:inherit;accent-color:#086557}button,select{background:white;color:#173b39;border:1px solid #8ba69c;border-radius:4px;padding:4px 9px;max-width:100%}button,summary{cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #a64d29;outline-offset:2px}.groups,.reads{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.group,.reads>div{padding:10px;background:#f2f6ef;border-radius:4px;min-width:0}.group h3,.reads h3{font-size:16px;margin:0 0 5px}.film,.blocks{display:grid;grid-template-columns:1fr 1fr;gap:4px}.film img{width:100%;image-rendering:pixelated}.blocks{margin-top:8px}.blocks button{font-variant-numeric:tabular-nums;padding:3px 4px;border-color:#a9c0b5;font-size:14px}.blocks strong,.blocks span{display:block}.blocks button.q{outline:2px solid #007567;outline-offset:-2px}.blocks button[aria-pressed=true]{color:white;background:#964526}.blocks button.q[aria-pressed=true]{outline:3px solid #007567;outline-offset:1px}.sub,.small{font-size:15px}.sub{margin-top:6px;font-variant-numeric:tabular-nums}.small{color:#48615e}.worked{background:#e8f2eb;border-left:3px solid #167567;padding:9px 12px;overflow-wrap:anywhere}.reads{margin-top:14px}.reads strong{font-size:19px;color:#185b50;font-variant-numeric:tabular-nums}code{font-size:15px;overflow-wrap:anywhere}details{margin-top:14px}
+@media(max-width:680px){.groups{gap:6px}.group{padding:5px}.blocks button{font-size:12px}.group h3{font-size:14px}.reads{grid-template-columns:1fr}.film{gap:2px}.sub{font-size:13px}}
+@media(max-width:470px){.groups{grid-template-columns:1fr}.group{display:grid;grid-template-columns:minmax(70px,.8fr) minmax(115px,1.2fr);align-items:center;gap:3px 8px;padding:8px}.group h3{grid-column:1}.film{grid-column:1;grid-row:2}.blocks{grid-column:2;grid-row:1 / span 3;margin:0}.group .sub{grid-column:1;grid-row:3}.blocks button{display:flex;justify-content:space-between;gap:2px;flex-wrap:wrap}.group h3,.blocks button{font-size:13px}}
+</style></head><body><main>__NAV__<h1>一条消息怎样穿过视频帧？</h1>
+<p>白方块从右向左移动。小模型把六帧压成三个时间组，每组切成六块。先看中间的块 8，它在一次预测中能从最后两帧读到多少信息？</p>
+<section id="route"><h2>选择谁读、读谁</h2><p>绿框是接收消息的查询块。点击一个格子，把它选为发送信息的源块（橙色）。两种颜色可以落在同一块上。</p>
+<div class="controls"><label>查询块 <select id="query"></select></label><label>源块 <select id="source"></select></label><label>各层连接 <select id="mode"><option value="full">允许跨时间组</option><option value="local">只读本组</option></select></label>
+<label>格内显示 <select id="view"><option value="weight">注意力权重</option><option value="product">加权贡献</option></select></label></div>
+<div class="groups" id="groups"></div><p class="small">原片显示位置变化。下面的网格画压缩后的块地址。相邻两帧会一起编码，一个潜块的特征可能包含周围像素。</p>
+<p class="worked" id="formula"></p>
+<details id="match"><summary>从 Q 和 K 算出这个百分数</summary><p>同一个头里的 Q 和 K 各有 16 个分量。选一个编号看乘法，再把 16 个乘积相加得到匹配分数的分子。</p>
+<div class="controls"><label>分量编号 <input id="dim" type="range" min="0" max="15" step="1" value="0"><output id="dimRead"></output></label></div>
+<p class="worked" id="dot"></p><p id="probability"></p>
+<p class="small">softmax 将每个允许的分数取指数，再除以它们的总和。先把整行分数减去同一个最大值，可以保持比例相同并使数值计算稳定。</p></details></section>
+<section id="edit"><h2>只改源块交出的一个数</h2><p>保持输入、方向和进度不动，在第一层第一个注意力头中，给源块的值向量 V 的分量 0 加 1。Q 和 K 保持原值，因此这一层采用相同的权重。下面显示模型重跑时读到的数。</p>
+<div class="controls"><label><input type="checkbox" id="add">给当前源块的 V 加 1</label><button type="button" id="reset">恢复书中例子</button></div>
+<div class="reads"><div><h3>源块的 V 分量</h3><strong id="v"></strong></div><div><h3>该头汇总的消息</h3><strong id="m"></strong></div><div><h3>整网报出的速度分量</h3><strong id="u"></strong></div></div>
+<p id="why"></p><p class="small">读数取自生成进度 0.5 的一次查询。速度是所选潜块的第 0 个输出分量。注意力头先汇总消息，再经过输出投影、残差连接、第二层和输出层，网络才给出这个速度。</p>
+<details><summary>用 Python 复算这格，或用模型权重重做干预</summary><p>在解压包的 reproduce 目录运行。第一条只需 Python 标准库，会同时列出原值与加 1 后的实测。第二条用 CPU 版 PyTorch 载入随包权重，重新执行全部前向。若要读取自己的记录，给第一条补上 <code>--record replay/attention/message.json</code>。</p><p><code id="cmd"></code></p><p><code>python3 attention_capture.py --out replay/attention/message.json</code></p></details></section>
+<p><a href="https://arxiv.org/abs/1706.03762">注意力原论文</a>　<a href="https://arxiv.org/abs/2204.03458">Video Diffusion Models 原论文</a></p></main>
+<script id="record" type="application/json">__RECORD__</script><script>
+"use strict";
+const record=JSON.parse(document.getElementById("record").textContent);
+const el=id=>document.getElementById(id);
+const f=v=>(Math.abs(v)<.00005?0:v).toFixed(4).replace("-","−");
+const delta=v=>(v>.00005?"+":"")+f(v);
+const buttons=[],subtotals=[];
+for(let i=0;i<18;i++){el("query").add(new Option(i,i));el("source").add(new Option(i,i))}
+for(let g=0;g<3;g++){
+ const article=document.createElement("article");article.className="group";
+ const title=document.createElement("h3");title.textContent="组 "+g+" · 帧 "+(2*g)+"、"+(2*g+1);
+ const film=document.createElement("div");film.className="film";
+ for(let j=2*g;j<2*g+2;j++){const i=new Image();i.src=record.frames[j];i.alt="原片第 "+j+" 帧";film.append(i)}
+ const grid=document.createElement("div");grid.className="blocks";
+ for(let j=6*g;j<6*g+6;j++){
+  const button=document.createElement("button");button.type="button";
+  const name=document.createElement("span");name.textContent="块 "+j;
+  button.append(name,document.createElement("strong"));grid.append(button);buttons.push(button);
+  button.onclick=()=>{el("source").value=j;update()};
+ }
+ const sub=document.createElement("div");sub.className="sub";subtotals.push(sub);
+ article.append(title,film,grid,sub);el("groups").append(article);
+}
+function showMatch(run,q,j,mode){
+ const query=run.queries[q],key=run.keys[j],d=+el("dim").value;
+ const dots=run.keys.map(k=>query.reduce((s,v,n)=>s+v*k[n],0));
+ const scores=dots.map(v=>v/Math.sqrt(query.length));
+ const allowed=scores.map((_,k)=>mode==="full" || Math.floor(k/6)===Math.floor(q/6));
+ const peak=Math.max(...scores.filter((_,k)=>allowed[k]));
+ const masses=scores.map((v,k)=>allowed[k]?Math.exp(v-peak):0);
+ const total=masses.reduce((a,b)=>a+b,0);
+ el("dimRead").textContent=d;
+ el("dot").textContent="分量 "+d+"　Q × K = "+f(query[d])+" × ("+f(key[d])+") ≈ "+f(query[d]*key[d])+"。16 项乘积之和为 "+f(dots[j])+"，除以 √16 得 "+f(scores[j])+"。";
+ el("probability").textContent=allowed[j]?"本行最大允许分数 "+f(peak)+"。源块指数项 exp("+f(scores[j])+" − ("+f(peak)+")) ≈ "+f(masses[j])+"。占全部 "+allowed.filter(Boolean).length+" 项的份额为 "+f(masses[j])+" ÷ "+f(total)+" ≈ "+(100*masses[j]/total).toFixed(2)+"%。":"这个源块属于另一时间组。只读本组时，它的指数项为 0。本组六项参与归一化，源块最终权重为 0%。";
+}
+function update(){
+ const q=+el("query").value,j=+el("source").value,on=el("add").checked,mode=el("mode").value;
+ const run=record.runs[mode],w=run.weights[q],v=run.values[j],showWeights=el("view").value==="weight";
+ showMatch(run,q,j,mode);
+ const products=w.map((a,k)=>a*(run.values[k]+Number(on && j===k)));
+ for(let k=0;k<18;k++){
+  const b=buttons[k];b.setAttribute("aria-pressed",k===j);b.classList.toggle("q",q===k);
+  b.lastElementChild.textContent=showWeights?(100*w[k]).toFixed(1)+"%":f(products[k]);
+  b.setAttribute("aria-label","源块 "+k+(q===k?"，也是查询块":"")+"，"+(showWeights?"权重 ":"贡献 ")+b.lastElementChild.textContent);
+ }
+ for(let g=0;g<3;g++){
+  const subtotal=(showWeights?w:products).slice(6*g,6*g+6).reduce((a,b)=>a+b,0);
+  subtotals[g].textContent=showWeights?"份额 "+(100*subtotal).toFixed(1)+"%":"贡献和 "+f(subtotal);
+ }
+ const m0=run.messages[q],m1=run.edited_messages[j][q],u0=run.velocity[q],u1=run.edited_velocity[j][q];
+ el("formula").textContent="块 "+j+" 给块 "+q+" 的贡献 = 权重 × V = "+f(w[j])+" × ("+f(v+Number(on))+") ≈ "+f(products[j])+"。把 18 份贡献相加，模型实收 "+f(on?m1:m0)+"。";
+ const transition=(a,b)=>on?f(a)+" → "+f(b):f(a);
+ el("v").textContent=transition(v,v+1);el("m").textContent=transition(m0,m1);el("u").textContent=transition(u0,u1);
+ let explanation="勾选加 1 前，先猜汇总消息会增加多少。可以用源块的权重乘 1 来算。";
+ if(on){
+  explanation="汇总消息实测变化 "+delta(m1-m0)+"，对应这条连接的权重 "+f(w[j])+"。整网速度实测变化 "+delta(u1-u0)+"。";
+  if(mode==="local" && Math.floor(q/6)!==Math.floor(j/6))explanation+="两层都只读本组，跨组的这次改动没有通路到达查询块。";
+ }
+ el("why").textContent=explanation;
+ el("cmd").textContent="python3 attention_report.py --query "+q+" --source "+j+" --mode "+mode;
+}
+el("dim").addEventListener("input",update);
+function reset(){el("dim").value=0;el("query").value=8;el("source").value=13;el("mode").value="full";el("view").value="weight";el("add").checked=false;update()}
+for(const id of ["query","source","mode","view","add"])el(id).addEventListener("change",update);
+el("reset").onclick=reset;reset();
+</script></body></html>
